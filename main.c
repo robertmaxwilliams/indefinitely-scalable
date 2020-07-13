@@ -13,7 +13,8 @@
 unsigned int color_table[256];
 int sps = 500000;
 int placer_index = 1;
-char placer_types[] = " ydt1x           ";
+char placer_types[] = " fydt1x           ";
+
 
 typedef struct _cell_t {
     struct _cell_t* up;
@@ -25,6 +26,9 @@ typedef struct _cell_t {
 } cell_t;
 typedef cell_t *grid_t[GRID_SIZE][GRID_SIZE];
 typedef grid_t *world_t[WORLD_SIZE][WORLD_SIZE];
+
+// hole is used like NULL except it points to itself, so hole->left is hole, and so on.
+cell_t* hole;
 
 void print_grid(grid_t grid) {
     iter(i, GRID_SIZE) {
@@ -72,8 +76,8 @@ void draw_world(world_t world) {
 
 
 cell_t* random_neighbor(cell_t* cell) {
-    if (cell == NULL) {
-        return NULL;
+    if (cell == hole) {
+        return hole;
     }
     switch (rand() % 4) {
         case 0:
@@ -85,14 +89,14 @@ cell_t* random_neighbor(cell_t* cell) {
         case 3:
             return cell->down;
     }
-    return NULL;
+    return hole;
 }
 
 int is_empty(cell_t* cell) {
-    return cell != NULL && cell->type == ' ';
+    return cell != hole && cell->type == ' ';
 }
 int is_taken(cell_t* cell) {
-    return cell != NULL && cell->type != ' ';
+    return cell != hole && cell->type != ' ';
 }
 
 void gamma_ray(world_t* world) {
@@ -171,7 +175,7 @@ int poll_events(int* sps, world_t* world) {
 
 
 void nice_copy_cell(cell_t* dest, cell_t* source) {
-    if (source != NULL && (is_empty(dest))) {
+    if (source != hole && (is_empty(dest))) {
         dest->type = source->type;
         memcpy(dest->data, source->data, DATA_SIZE);
     }
@@ -210,6 +214,51 @@ void update_y(cell_t* cell) {
     }
 }
 
+void swap_cells(cell_t* a, cell_t* b) {
+    if (a == hole)
+        return;
+    if (b == hole)
+        return;
+    cell_t* temp = malloc(sizeof(cell_t));
+    copy_cell(temp, a);
+    copy_cell(a, b);
+    copy_cell(b, temp);
+}
+
+void update_f(cell_t* cell) {
+#PATTERN
+    qwert
+        as.fg
+        zxcvb
+#ENDPATTERN
+
+        if (rand() % 1000 == 0) {
+            swap_cells(cell, random_neighbor(cell));
+            return;
+        }
+    int up_count = (q->type == 'f') + (w->type == 'f') + (e->type == 'f') 
+        + (r->type == 'f') + (t->type == 'f');
+    int level_count = (a->type == 'f') + (s->type == 'f') + (f->type == 'f') + (g->type == 'f');
+    int down_count = (z->type == 'f') + (x->type == 'f') + (c->type == 'f') + (v->type == 'f') 
+        + (b->type == 'f');
+    if (level_count >= up_count && level_count >= down_count) {
+        return;
+        if (is_empty(s)) swap_cells(cell, s);
+        else if (is_empty(f)) swap_cells(cell, f);
+    } else if (up_count >= down_count) {
+        if (is_empty(e)) swap_cells(cell, e);
+        else if (is_empty(w)) swap_cells(cell, w);
+        else if (is_empty(r)) swap_cells(cell, r);
+    } else {
+        if (is_empty(c)) swap_cells(cell, c);
+        else if (is_empty(x)) swap_cells(cell, x);
+        else if (is_empty(v)) swap_cells(cell, v);
+    }
+}
+
+    
+    
+
 #define break_if_nonempty(cell) if (!is_empty(cell)) break
 void step(grid_t* grid) {
     int i = rand() % GRID_SIZE;
@@ -218,6 +267,7 @@ void step(grid_t* grid) {
     cell_t* neigh; //todo move updates into functons, maybe in seperate file
     switch (cell->type) {
         case 'y': update_y(cell); break;
+        case 'f': update_f(cell); break;
         case 'x':
             if (cell->data[0] > 20)
                 break;
@@ -260,6 +310,12 @@ void step(grid_t* grid) {
 
 int main() {
     //bbggrraa
+    hole = malloc(sizeof(cell_t));
+    hole->left = hole;
+    hole->right = hole;
+    hole->up = hole;
+    hole->down = hole;
+
     srand(1234);
     iter(i, 256) {
         color_table[i] = rand() << 8;
@@ -326,7 +382,7 @@ int main() {
                         (*world[m][n])[i][j]->down = 
                             (*world[m+1][n])[0][j];
                     } else {
-                        (*world[m][n])[i][j]->down = NULL;
+                        (*world[m][n])[i][j]->down = hole;
                     }
 
                     // i up (negative)
@@ -337,7 +393,7 @@ int main() {
                         (*world[m][n])[i][j]->up = 
                             (*world[m-1][n])[GRID_SIZE-1][j];
                     } else {
-                        (*world[m][n])[i][j]->up = NULL;
+                        (*world[m][n])[i][j]->up = hole;
                     }
 
                     // j right (positive)
@@ -348,7 +404,7 @@ int main() {
                         (*world[m][n])[i][j]->right = 
                             (*world[m][n+1])[i][0];
                     } else {
-                        (*world[m][n])[i][j]->right = NULL;
+                        (*world[m][n])[i][j]->right = hole;
                     }
 
                     // j left (negative)
@@ -359,7 +415,7 @@ int main() {
                         (*world[m][n])[i][j]->left = 
                             (*world[m][n-1])[i][GRID_SIZE-1];
                     } else {
-                        (*world[m][n])[i][j]->left = NULL;
+                        (*world[m][n])[i][j]->left = hole;
                     }
                 }
             }
