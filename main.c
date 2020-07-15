@@ -1,34 +1,24 @@
 #include <stdio.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
 #include <SDL2/SDL.h>
 #include "constants.h"
+#include "behave.out.h"
 
 #include "graphics.h"
 
-#define iter(i_var, i_limit) for (int i_var=0;i_var<i_limit;i_var++)
-#define DATA_SIZE 10
 
 unsigned int color_table[256];
 int sps = 500000;
 int placer_index = 1;
-char placer_types[] = " fydt1x           ";
+char placer_types[] = " icsfydt1x           ";
+
+#define IN_SIZE 256
+char in_buff[IN_SIZE];
 
 
-typedef struct _cell_t {
-    struct _cell_t* up;
-    struct _cell_t* down;
-    struct _cell_t* left;
-    struct _cell_t* right;
-    char type;
-    unsigned char data[DATA_SIZE]; // data is only copied around when the cell wants to
-} cell_t;
-typedef cell_t *grid_t[GRID_SIZE][GRID_SIZE];
-typedef grid_t *world_t[WORLD_SIZE][WORLD_SIZE];
-
-// hole is used like NULL except it points to itself, so hole->left is hole, and so on.
-cell_t* hole;
 
 void print_grid(grid_t grid) {
     iter(i, GRID_SIZE) {
@@ -63,7 +53,7 @@ void draw_world(world_t world) {
             iter(i, GRID_SIZE) { 
                 iter(j, GRID_SIZE) {
                     unsigned int color =
-                        (color_table[(*grid)[i][j]->type] ^ ((*grid)[i][j]->data[0] << 8));
+                        (color_table[(*grid)[i][j]->type] & 0xffff0000) | ((*grid)[i][j]->data[0] << 8);
                     draw(n*GRID_SIZE+j, m*GRID_SIZE+i, color);
                 }
             }
@@ -72,31 +62,6 @@ void draw_world(world_t world) {
     SDL_UnlockTexture(buffer);
     SDL_RenderCopy(renderer, buffer, NULL, NULL);
     SDL_RenderPresent(renderer);
-}
-
-
-cell_t* random_neighbor(cell_t* cell) {
-    if (cell == hole) {
-        return hole;
-    }
-    switch (rand() % 4) {
-        case 0:
-            return cell->right;
-        case 1:
-            return cell->left;
-        case 2:
-            return cell->up;
-        case 3:
-            return cell->down;
-    }
-    return hole;
-}
-
-int is_empty(cell_t* cell) {
-    return cell != hole && cell->type == ' ';
-}
-int is_taken(cell_t* cell) {
-    return cell != hole && cell->type != ' ';
 }
 
 void gamma_ray(world_t* world) {
@@ -114,8 +79,42 @@ void gamma_ray(world_t* world) {
     else
         cell->type ^= mask;
 }
-    
 
+int find(char* arr, char x, int size) {
+    iter(i, size) {
+        if (arr[i] == x)
+            return i;
+    }
+    return -1;
+}
+    
+void scan_for_strings(world_t* world) {
+    char strings[256][IN_SIZE] = {0};
+    char any[256] = {0};
+    iter(m, WORLD_SIZE) { 
+        iter(n, WORLD_SIZE) {
+            grid_t* grid = (*world)[m][n];
+            iter(i, GRID_SIZE) { 
+                iter(j, GRID_SIZE) {
+                    cell_t* cell = (*grid)[i][j];
+                    if (cell->type == 'i') {
+                        unsigned char string_index = cell->data[0];
+                        unsigned char c = cell->data[1];
+                        unsigned char id = cell->data[2];
+                        strings[id][string_index] = c;
+                        any[id] = 1;
+                    }
+                }
+            }
+        }
+    }
+
+    iter(i, 256) {
+        if (any[i]) {
+            printf("%d: %s\n", i, strings[i]);
+        }
+    }
+}
 
 
 int poll_events(int* sps, world_t* world) {
@@ -129,13 +128,27 @@ int poll_events(int* sps, world_t* world) {
                 && event.button.button == SDL_BUTTON_LEFT) {
             int x = event.button.x / SCALE;
             int y = event.button.y / SCALE;
-            printf("%d %d\n", x, y);
+            //printf("%d %d\n", x, y);
             int i = y % GRID_SIZE;
             int j = x % GRID_SIZE;
             int m = y / GRID_SIZE;
             int n = x / GRID_SIZE;
             (*(*world)[m][n])[i][j]->type = placer_types[placer_index];
             memset((*(*world)[m][n])[i][j]->data, 0, DATA_SIZE);
+        }
+        else if ((event.type == SDL_MOUSEBUTTONDOWN ||  event.type == SDL_MOUSEMOTION) 
+                && event.button.button == SDL_BUTTON_MIDDLE) {
+            int x = event.button.x / SCALE;
+            int y = event.button.y / SCALE;
+            //printf("%d %d\n", x, y);
+            int m = y / GRID_SIZE;
+            int n = x / GRID_SIZE;
+            iter(i, GRID_SIZE) {
+                iter(j, GRID_SIZE) {
+                    (*(*world)[m][n])[i][j]->type = placer_types[placer_index];
+                    memset((*(*world)[m][n])[i][j]->data, 128, DATA_SIZE);
+                }
+            }
         }
 
         else if (event.type == SDL_KEYDOWN) {
@@ -167,149 +180,19 @@ int poll_events(int* sps, world_t* world) {
                         gamma_ray(world);
                     }
                     break;
+                case SDLK_h: // scan all cells for strings
+                    scan_for_strings(world);
+                    break;
             }
         }
     }
     return 0;
 }
 
-
-void nice_copy_cell(cell_t* dest, cell_t* source) {
-    if (source != hole && (is_empty(dest))) {
-        dest->type = source->type;
-        memcpy(dest->data, source->data, DATA_SIZE);
-    }
-}
-// assumes both are non-void
-void copy_cell(cell_t* dest, cell_t* source) {
-    dest->type = source->type;
-    memcpy(dest->data, source->data, DATA_SIZE);
-}
-
-//       0      1      2    3
-// goes right, down, left, right. [0] is distance and [1] is state
-void update_y(cell_t* cell) {
-#PATTERN
-    c
-   a.b
-    d
-#ENDPATTERN
-
-    if (cell->data[0] > 20) {
-        cell->data[1] = (cell->data[1] + 1) % 4;
-        cell->data[0] = 0;
-    }
-
-    cell_t* dest;
-    switch (cell->data[1]) {
-        case 0: dest = b; break;
-        case 1: dest = d; break;
-        case 2: dest = a; break;
-        case 3: dest = c; break;
-        default: return;
-    }
-    if (is_empty(dest)) {
-        copy_cell(dest, cell);
-        dest->data[0] += 1;
-    }
-}
-
-void swap_cells(cell_t* a, cell_t* b) {
-    if (a == hole)
-        return;
-    if (b == hole)
-        return;
-    cell_t* temp = malloc(sizeof(cell_t));
-    copy_cell(temp, a);
-    copy_cell(a, b);
-    copy_cell(b, temp);
-}
-
-void update_f(cell_t* cell) {
-#PATTERN
-    qwert
-        as.fg
-        zxcvb
-#ENDPATTERN
-
-        if (rand() % 1000 == 0) {
-            swap_cells(cell, random_neighbor(cell));
-            return;
-        }
-    int up_count = (q->type == 'f') + (w->type == 'f') + (e->type == 'f') 
-        + (r->type == 'f') + (t->type == 'f');
-    int level_count = (a->type == 'f') + (s->type == 'f') + (f->type == 'f') + (g->type == 'f');
-    int down_count = (z->type == 'f') + (x->type == 'f') + (c->type == 'f') + (v->type == 'f') 
-        + (b->type == 'f');
-    if (level_count >= up_count && level_count >= down_count) {
-        return;
-        if (is_empty(s)) swap_cells(cell, s);
-        else if (is_empty(f)) swap_cells(cell, f);
-    } else if (up_count >= down_count) {
-        if (is_empty(e)) swap_cells(cell, e);
-        else if (is_empty(w)) swap_cells(cell, w);
-        else if (is_empty(r)) swap_cells(cell, r);
-    } else {
-        if (is_empty(c)) swap_cells(cell, c);
-        else if (is_empty(x)) swap_cells(cell, x);
-        else if (is_empty(v)) swap_cells(cell, v);
-    }
-}
-
-    
-    
-
-#define break_if_nonempty(cell) if (!is_empty(cell)) break
-void step(grid_t* grid) {
-    int i = rand() % GRID_SIZE;
-    int j = rand() % GRID_SIZE;
-    cell_t* cell = (*grid)[i][j];
-    cell_t* neigh; //todo move updates into functons, maybe in seperate file
-    switch (cell->type) {
-        case 'y': update_y(cell); break;
-        case 'f': update_f(cell); break;
-        case 'x':
-            if (cell->data[0] > 20)
-                break;
-            neigh = random_neighbor(cell);
-            break_if_nonempty(neigh);
-            copy_cell(neigh, cell);
-            neigh->data[0] += 1;
-            break;
-        case 'd':
-            neigh = random_neighbor(cell);
-            if (is_empty(neigh)) {
-                neigh->type = 'd';
-                cell->type = 't';
-            } /*else if (is_taken(neigh)) {
-                cell->type = neigh->type;
-                neigh->type = 'd';
-            }*/
-            break;
-        case 't':
-            neigh = random_neighbor(cell);
-            break_if_nonempty(neigh);
-            neigh->type = 't';
-            cell->type = ' ';
-            break;
-        case '1':
-            if (rand() % 10000 == 0) {
-                cell->type = 't';
-                break;
-            }
-            neigh = random_neighbor(cell);
-            if (is_taken(neigh) && neigh->type == 't') {
-                neigh->type = '1';
-            }
-            break;
-        default:
-            cell->type = ' ';
-            memset(cell->data, 0, DATA_SIZE);
-    }
-}
-
 int main() {
-    //bbggrraa
+    // make read non-blocking
+    int flags = fcntl(0, F_GETFL, 0);
+    fcntl(0, F_SETFL, flags | O_NONBLOCK);
     hole = malloc(sizeof(cell_t));
     hole->left = hole;
     hole->right = hole;
@@ -342,9 +225,19 @@ int main() {
             }
         }
     }
-    (*world[1][1])[1][1]->type = '1';
-    (*world[3][3])[1][1]->type = 'd';
-    (*world[14][3])[1][1]->type = '1';
+    //(*world[1][1])[1][1]->type = '1';
+
+    /*
+    for (int i = -4; i < 5; i+=2) {
+        int i_ = i + WORLD_SIZE/2;
+        (*world[i_][WORLD_SIZE-1])[GRID_SIZE/2][GRID_SIZE/2]->type = 'd';
+    }
+    iter(i, 5) {
+        (*world[WORLD_SIZE/2 - 5][WORLD_SIZE-1])[i][GRID_SIZE/2]->type = 'f';
+        (*world[WORLD_SIZE/2 + 5][WORLD_SIZE-1])[i][GRID_SIZE/2]->type = 'f';
+    }
+    */
+    //(*world[14][3])[1][1]->type = '1';
 
     /* The array is organized like this:
      * (*world[m][n])[i][j]->type = 'x';
@@ -427,18 +320,35 @@ int main() {
     int num_sites = WORLD_SIZE*WORLD_SIZE * GRID_SIZE*GRID_SIZE;
     graphics_init();
     clock_t last_time = clock();
+    printf("      0123456789\n");
+    printf("nums: %s\n", placer_types);
 
     while (1) {
 
         if (foo%sps == 0) {
+            memset(in_buff, 0, IN_SIZE);
+            int status = read(STDIN_FILENO, in_buff, IN_SIZE);
+            unsigned char id = (rand() % 255) + 1;
+            if (status != -1) {
+                printf("Got: %s\n", in_buff);
+                iter(i, IN_SIZE) {
+                    if (in_buff[i] == '\0')
+                        break;
+                    cell_t* cell = (*world[0][0])[i%GRID_SIZE][i/GRID_SIZE];
+                    cell->type = 'i';
+                    cell->data[0] = i;
+                    cell->data[1] = in_buff[i];
+                    cell->data[2] = id;
+                }
+            }
             clock_t now_time = clock();
             clock_t time_diff = now_time - last_time;
 
             float seconds_passed = ((float) time_diff)/ CLOCKS_PER_SEC;
-            printf("      0123456789\n");
-            printf("nums: %s\n", placer_types);
-            printf("AER = %6.6f , FPS = %6.6f\n", ((float)num_events)/(seconds_passed * num_sites),
-                    1.0/seconds_passed);
+            //printf("      0123456789\n");
+            //printf("nums: %s\n", placer_types);
+            //printf("AER = %6.6f , FPS = %6.6f\n", ((float)num_events)/(seconds_passed * num_sites),
+            //        1.0/seconds_passed);
             if (poll_events(&sps, &world))
                 return 1;
             //print_world(world);

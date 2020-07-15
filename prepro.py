@@ -1,6 +1,7 @@
 import itertools
 import re
 import sys
+
 def ascii_to_grid(string):
     letters = []
     lines = string.split('\n')
@@ -51,14 +52,26 @@ def sub_between(string, starter, ender, subfun):
 
 def process_ascii_art(string):
     out = []
-    for (i, j, c) in ascii_to_grid(string):
-        out.append(f'cell_t* {c} = cell{chainer(i, j)};')
+    
+    letters = ascii_to_grid(string)
+
+    def third(ls):
+        return ls[2]
+    for _, group_iter in itertools.groupby(sorted(letters,key=third), key=third):
+        group = list(group_iter)
+        if len(group) == 1:
+            (i, j, c) = group[0]
+            out.append(f'cell_t* {c} = cell{chainer(i, j)};\n')
+        else:
+            var_name = group[0][2]
+            out.append(f'cell_t* {var_name};\n')
+            out.append(f'switch(rand() % {len(group)})' + ' {\n')
+            for (n, (i, j, c)) in enumerate(group):
+                out.append(f'\tcase {n}: {c} = cell{chainer(i, j)}; break;\n')
+            out.append('}\n')
     return ''.join(out)
+
 
 if __name__ == "__main__":
     source = open(sys.argv[1]).read()
     print(sub_between(source, '#PATTERN', '#ENDPATTERN', process_ascii_art))
-
-
-
-    
