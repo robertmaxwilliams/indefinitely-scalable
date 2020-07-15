@@ -3,6 +3,7 @@ import re
 import sys
 
 def ascii_to_grid(string):
+    string = string.replace('|', '')
     letters = []
     lines = string.split('\n')
     for i, line in enumerate(lines):
@@ -40,11 +41,10 @@ def chainer(di, dj):
 def sub_between(string, starter, ender, subfun):
     parts = string.split(starter)
     out = []
-    for part in parts:
-        stuff = part.split(ender)
-        if len(stuff) == 1:
-            out.append(part)
-        elif len(stuff) == 2:
+    out.append(parts[0])
+    for part in parts[1:]:
+        stuff = part.split(ender, 1)
+        if len(stuff) == 2:
             out.append(subfun(stuff[0])+stuff[1])
         else:
             raise Exception("oh no your strings are all wrong", stuff)
@@ -74,4 +74,4 @@ def process_ascii_art(string):
 
 if __name__ == "__main__":
     source = open(sys.argv[1]).read()
-    print(sub_between(source, '#PATTERN', '#ENDPATTERN', process_ascii_art))
+    print(sub_between(source, 'PATTERN', ';', process_ascii_art))

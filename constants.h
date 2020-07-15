@@ -3,8 +3,9 @@
 
 
 #define GRID_SIZE 10
-#define WORLD_SIZE 12
-#define SCALE 4
+#define WORLD_SIZE 4
+#define SCALE 16
+#define BORDER 5
 #define WINDOW_WIDTH (GRID_SIZE*WORLD_SIZE * SCALE)
 #define WINDOW_HEIGHT (GRID_SIZE*WORLD_SIZE * SCALE)
 

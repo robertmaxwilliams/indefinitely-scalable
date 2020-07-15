@@ -13,7 +13,8 @@
 unsigned int color_table[256];
 int sps = 500000;
 int placer_index = 1;
-char placer_types[] = " icsfydt1x           ";
+char placer_types[] = " isdr           ";
+int data_select = 0;
 
 #define IN_SIZE 256
 char in_buff[IN_SIZE];
@@ -45,6 +46,10 @@ void print_world(world_t world) {
     }
 }
 
+unsigned int repeat3(unsigned char x) {
+    return (256-x) << 8 | x << 16 | x << 24;
+}
+
 void draw_world(world_t world) {
     SDL_LockTexture(buffer, NULL, (void**) &pixels, &pitch);
     iter(m, WORLD_SIZE) { 
@@ -52,9 +57,10 @@ void draw_world(world_t world) {
             grid_t* grid = world[m][n];
             iter(i, GRID_SIZE) { 
                 iter(j, GRID_SIZE) {
-                    unsigned int color =
-                        (color_table[(*grid)[i][j]->type] & 0xffff0000) | ((*grid)[i][j]->data[0] << 8);
-                    draw(n*GRID_SIZE+j, m*GRID_SIZE+i, color);
+                    unsigned char t = (*grid)[i][j]->type;
+                    unsigned int color1 = (color_table[t]);
+                    unsigned int color2 = t == ' ' ? color1 : repeat3((*grid)[i][j]->data[data_select]);
+                    draw(n*GRID_SIZE+j, m*GRID_SIZE+i, color1, color2);
                 }
             }
         }
@@ -97,10 +103,10 @@ void scan_for_strings(world_t* world) {
             iter(i, GRID_SIZE) { 
                 iter(j, GRID_SIZE) {
                     cell_t* cell = (*grid)[i][j];
-                    if (cell->type == 'i') {
-                        unsigned char string_index = cell->data[0];
-                        unsigned char c = cell->data[1];
-                        unsigned char id = cell->data[2];
+                    if (cell->type == 's') {
+                        unsigned char id = cell->data[0];
+                        unsigned char string_index = cell->data[1];
+                        unsigned char c = cell->data[2];
                         strings[id][string_index] = c;
                         any[id] = 1;
                     }
@@ -109,8 +115,18 @@ void scan_for_strings(world_t* world) {
         }
     }
 
+    printf("\nStrings:\n");
     iter(i, 256) {
         if (any[i]) {
+            // replace \0 with ? when inside string 
+            int is_in_string = 0;
+            for (int j = IN_SIZE-1; j >= 0; j--) {
+                if (is_in_string && strings[i][j] == '\0')
+                    strings[i][j] = '?';
+                else if (strings[i][j] != '\0')
+                    is_in_string = 1;
+            }
+            strings[i][IN_SIZE-1] = '\0';
             printf("%d: %s\n", i, strings[i]);
         }
     }
@@ -183,10 +199,46 @@ int poll_events(int* sps, world_t* world) {
                 case SDLK_h: // scan all cells for strings
                     scan_for_strings(world);
                     break;
+                case SDLK_j: // scan all cells for strings
+                    data_select -= 1;
+                    data_select = data_select < 0 ? DATA_SIZE - 1 : data_select % DATA_SIZE;
+                    printf("Data select: %d\n", data_select);
+                    break;
+                case SDLK_k: // scan all cells for strings
+                    data_select += 1;
+                    data_select = data_select < 0 ? DATA_SIZE - 1 : data_select % DATA_SIZE;
+                    printf("Data select: %d\n", data_select);
+                    break;
             }
         }
     }
     return 0;
+}
+
+void print_in_buff_to_world(world_t world) {
+    unsigned char id = (rand() % 255) + 1;
+    int x = 0;
+    for (int i = 0; i < IN_SIZE; i++) {
+        if (in_buff[i] == '\0')
+            return;
+        cell_t* cell;
+
+        // find next empty square
+        while (1) {
+            // if we've taken up more than one grid, quit
+            if (i+x >= GRID_SIZE * GRID_SIZE)
+                return;
+            cell = (*world[0][0])[(i+x)%GRID_SIZE][(i+x)/GRID_SIZE];
+            if (cell->type == ' ') {
+                break;
+            }
+            x++;
+        }
+        cell->type = 's';
+        cell->data[0] = id;
+        cell->data[1] = i;
+        cell->data[2] = in_buff[i];
+    }
 }
 
 int main() {
@@ -199,7 +251,7 @@ int main() {
     hole->up = hole;
     hole->down = hole;
 
-    srand(1234);
+    srand(123459);
     iter(i, 256) {
         color_table[i] = rand() << 8;
     }
@@ -226,6 +278,10 @@ int main() {
         }
     }
     //(*world[1][1])[1][1]->type = '1';
+    const char *tmp = "Hello world";
+    memset(in_buff, 0, IN_SIZE);
+    strncpy(in_buff, tmp, IN_SIZE - 1);
+    print_in_buff_to_world(world);
 
     /*
     for (int i = -4; i < 5; i+=2) {
@@ -328,23 +384,22 @@ int main() {
         if (foo%sps == 0) {
             memset(in_buff, 0, IN_SIZE);
             int status = read(STDIN_FILENO, in_buff, IN_SIZE);
-            unsigned char id = (rand() % 255) + 1;
-            if (status != -1) {
-                printf("Got: %s\n", in_buff);
-                iter(i, IN_SIZE) {
-                    if (in_buff[i] == '\0')
-                        break;
-                    cell_t* cell = (*world[0][0])[i%GRID_SIZE][i/GRID_SIZE];
-                    cell->type = 'i';
-                    cell->data[0] = i;
-                    cell->data[1] = in_buff[i];
-                    cell->data[2] = id;
-                }
-            }
+
             clock_t now_time = clock();
             clock_t time_diff = now_time - last_time;
-
             float seconds_passed = ((float) time_diff)/ CLOCKS_PER_SEC;
+            if (status != -1) {
+                if (strlen(in_buff) > 1) {
+                    in_buff[strlen(in_buff)-1] = '\0';
+                    printf("Got: %s\n", in_buff);
+                    print_in_buff_to_world(world);
+                } else {
+                    scan_for_strings(&world);
+                    printf("AER = %6.6f , FPS = %6.6f\n", ((float)num_events)/(seconds_passed * num_sites),
+                            1.0/seconds_passed);
+                }
+
+            }
             //printf("      0123456789\n");
             //printf("nums: %s\n", placer_types);
             //printf("AER = %6.6f , FPS = %6.6f\n", ((float)num_events)/(seconds_passed * num_sites),

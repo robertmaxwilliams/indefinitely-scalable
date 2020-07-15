@@ -7,6 +7,8 @@
 
 extern cell_t* hole;
 
+// HELPER FUNC AREA, TODO put in external file
+
 cell_t* random_neighbor(cell_t* cell) {
     if (cell == hole) {
         return hole;
@@ -103,171 +105,122 @@ void diffuse(cell_t * cell, int probability) {
         move_to_target_if_empty(random_neighbor8(cell), cell);
     }
 }
-    
 
+int randp (int n) {
+    return rand() % n == 0;
+}
+
+/* 
+ * CELL FUNC AREA
+ *
+ * cells:
+ * isolater i
+ * string s
+ * dreg d
+ * res r
+ */
+
+    
+void update_dreg(cell_t* cell) {
+    if (randp(500)) {
+        diffuse(cell, 1);
+        return;
+    }
+    PATTERN
+        |   a
+        |  aaa
+        | aa.aa
+        |  aaa
+        |   a;
+    switch (a->type) {
+        case ' ':
+            // make fresh res
+            if (randp(50000)) a->type = 'r';
+            break;
+        case 'r':
+            // convert res to dreg
+            if (randp(50000)) a->type = 'd';
+            // destroy res
+            if (randp(500)) clear_cell(a);
+            break;
+        case 'd':
+            // convert dreg to res
+            if (randp(50)) a->type = 'r';
+            break;
+        default:
+            // convert anyone to res
+            if (randp(500)) {
+                clear_cell(a);
+                a->type = 'r';
+            }
+    }
+}
+
+void update_res(cell_t* cell) {
+    diffuse(cell, 100);
+}
+
+// data is {id, string index, character}
 void update_string(cell_t* cell) {
     diffuse(cell, 1000);
 }
 
-// sorts left to right
-// keeps data in data[0]
-void update_sorter(cell_t* cell) {
-    ifrand(1000) {
+// data is {tracker, stored index, stored character}
+void update_isolater(cell_t* cell) {
+    if (randp(500)) {
         diffuse(cell, 1);
+        return;
     }
-    ifrand(6) {
-#PATTERN
-            aaa  
-            a.a
-            aaa  
-#ENDPATTERN
+    PATTERN
+        |   a
+        |  aaa
+        | aa.aa
+        |  aaa
+        |   a;
+    // consume a res to replicate self or stored string
+    if (a->type == 'r') {
+        if (randp(2)) {
+            copy_cell(a, cell);
+        } else {
+            copy_cell(a, cell);
+            a->type = 's';
+        }
 
-            // diffuse when near other sorters
-            if (a->type == 's') {
-                diffuse(cell, 1);
-                ifrand(100) {
-                    clear_cell(cell);
-                }
-            } else if (a->type == 'd') {
-                clear_cell(cell);
-            }
-            return;
+        return;
     }
-#PATTERN
-   xx aa  
-   xx aa  
-   zz.
-   yy aa  
-   yy aa  
-#ENDPATTERN
+    if (a->type != 's')
+        return;
+    unsigned char tracker = cell->data[0];
 
-   // make sure we're sorting data
-   if (a->type != 't')
-       return;
-
-   // do one unit of sorting
-   cell_t* dest;
-   if (a->data[0] > cell->data[0])
-       dest = x;
-   else if (a->data[0] < cell->data[0])
-       dest = y;
-   else
-       dest = z;
-   // only sort if dest is empty
-   if (!is_empty(dest))
-       return;
-   cell->data[0] = a->data[0];
-   swap_cells(dest, a);
-
-}
-
-
-
-
-
-//       0      1      2    3
-// goes right, down, left, right. [0] is distance and [1] is state
-void update_box(cell_t* cell) {
-#PATTERN
-    c
-   a.b
-    d
-#ENDPATTERN
-
-    if (cell->data[0] > 20) {
-        cell->data[1] = (cell->data[1] + 1) % 4;
-        cell->data[0] = 0;
-    }
-
-    cell_t* dest;
-    switch (cell->data[1]) {
-        case 0: dest = b; break;
-        case 1: dest = d; break;
-        case 2: dest = a; break;
-        case 3: dest = c; break;
-        default: return;
-    }
-    if (is_empty(dest)) {
-        copy_cell(dest, cell);
-        dest->data[0] += 1;
-    }
-}
-
-void update_line(cell_t* cell) {
-#PATTERN
-    s.s
-#ENDPATTERN
-    if (is_empty(s)) {
-        copy_cell(s, cell);
-    }
-}
-
-void update_datum(cell_t* cell) {
-    if (rand() % 100 > 0) return;
-#PATTERN
-   a 
-   a.
-   a 
-#ENDPATTERN
-
-    if (is_empty(a)) {
-        swap_cells(a, cell);
-    }
-}    
-
-void update_consumer(cell_t* cell) {
-#PATTERN
-    aa
-    .a
-    aa
-#ENDPATTERN
-    if (a->type == 't') {
-        clear_cell(a);
+    if (tracker == 0) {
+        // if we don't have a tracker, track the string we first encounter
+        cell->data[0] = a->data[0];
+    } else {
+        // turn an enemy string into a res
+        if (a->data[0] != tracker) {
+            clear_cell(a);
+            a->type = 'r';
+        // copy friendly data into store
+        } else {
+            cell->data[1] = a->data[1];
+            cell->data[2] = a->data[2];
+        }
     }
 }
 
 
 
-#define break_if_nonempty(cell) if (!is_empty(cell)) break
+
 void step(grid_t* grid) {
     int i = rand() % GRID_SIZE;
     int j = rand() % GRID_SIZE;
     cell_t* cell = (*grid)[i][j];
-    cell_t* neigh; //todo move updates into functons, maybe in seperate file
     switch (cell->type) {
-        case 's': update_sorter(cell); break;
-        case 'y': update_box(cell); break;
-        case 'f': update_line(cell); break;
-        case 't': update_datum(cell); break;
-        case 'c': update_consumer(cell); break;
-        case 'i': update_string(cell); break;
-        case 'x':
-            if (cell->data[0] > 20)
-                break;
-            neigh = random_neighbor(cell);
-            break_if_nonempty(neigh);
-            copy_cell(neigh, cell);
-            neigh->data[0] += 1;
-            break;
-        case 'd': // data dispenser
-            neigh = random_neighbor(cell);
-            if (is_empty(neigh)) {
-                neigh->type = 't';
-                neigh->data[0] = rand() % 256;
-            }
-            break;
-        case '1':
-            if (rand() % 10000 == 0) {
-                cell->type = 't';
-                break;
-            }
-            neigh = random_neighbor(cell);
-            if (is_taken(neigh) && neigh->type == 't') {
-                neigh->type = '1';
-            }
-            break;
+        case 'i': update_isolater(cell); break;
+        case 'd': update_dreg(cell); break;
+        case 'r': update_res(cell); break;
+        case 's': update_string(cell); break;
         default:
-            cell->type = ' ';
-            memset(cell->data, 0, DATA_SIZE);
+            clear_cell(cell);
     }
 }

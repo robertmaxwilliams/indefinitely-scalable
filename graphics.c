@@ -21,10 +21,13 @@ int clamp(int x, int min, int max) {
         return max;
     return x;
 }
-void draw(int x, int y, unsigned int color) {
+void draw(int x, int y, unsigned int color1, unsigned int color2) {
     for (int i = 0; i < SCALE; i++) {
         for (int j = 0; j < SCALE; j++) {
-            pixels[SCALE*x+i + (SCALE*y+j)*WINDOW_WIDTH] = color;
+            if (i < BORDER || i+BORDER >= SCALE || j < BORDER || j+BORDER >= SCALE)
+                pixels[SCALE*x+i + (SCALE*y+j)*WINDOW_WIDTH] = color1;
+            else
+                pixels[SCALE*x+i + (SCALE*y+j)*WINDOW_WIDTH] = color2;
         }
     }
 }
