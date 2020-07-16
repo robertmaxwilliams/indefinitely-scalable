@@ -106,6 +106,12 @@ void diffuse(cell_t * cell, int probability) {
     }
 }
 
+void hard_diffuse(cell_t * cell, int probability) {
+    if (rand() % probability == 0) {
+        swap_cells(random_neighbor8(cell), cell);
+    }
+}
+
 int randp (int n) {
     return rand() % n == 0;
 }
@@ -122,52 +128,103 @@ int randp (int n) {
 
     
 void update_dreg(cell_t* cell) {
-    if (randp(500)) {
-        diffuse(cell, 1);
-        return;
-    }
     PATTERN
         |   a
         |  aaa
         | aa.aa
         |  aaa
         |   a;
+
     switch (a->type) {
         case ' ':
-            // make fresh res
-            if (randp(50000)) a->type = 'r';
+            if (randp(10)) 
+                // sometimes make fresh res
+                a->type = 'r';
+            else
+                // diffuse in open space
+                swap_cells(a, cell);
             break;
+
         case 'r':
-            // convert res to dreg
-            if (randp(50000)) a->type = 'd';
-            // destroy res
-            if (randp(500)) clear_cell(a);
+            if (randp(500)) 
+                // rarely convert res to dreg
+                a->type = 'd';
+            else
+                // destroy res
+                clear_cell(a);
             break;
+
         case 'd':
-            // convert dreg to res
-            if (randp(50)) a->type = 'r';
+            // sometimes convert dreg to res
+            if (randp(10)) a->type = 'r';
             break;
+
         default:
-            // convert anyone to res
-            if (randp(500)) {
+            if (randp(2)) {
+                // convert anyone to res
                 clear_cell(a);
                 a->type = 'r';
+            } 
+            /*
+            else {
+                // or swap with them 
+                swap_cells(a, cell);
             }
+            */
     }
 }
 
 void update_res(cell_t* cell) {
-    diffuse(cell, 100);
+    diffuse(cell, 3);
 }
 
 // data is {id, string index, character}
 void update_string(cell_t* cell) {
-    diffuse(cell, 1000);
+    diffuse(cell, 6);
 }
+
+
+// helper for update_rememberer
+void remember_and_place(cell_t* cell, int i, cell_t* neigh, cell_t* maybe_res) {
+    if (neigh->type == 'm') {
+        cell->data[i] = 1;
+    } else if (maybe_res->type == 'r' && cell->data[i] == 1) {
+        swap_cells(neigh, maybe_res);
+        clear_cell(neigh);
+        neigh->type = 'm';
+    }
+}
+
+// stores whether there is someone at various relative positions, 
+// in the following way: {a, b, c, d}
+void update_rememberer(cell_t* cell) {
+    PATTERN
+        |      w 
+        |     www
+        |    zeafx
+        |   zzd.bxx   
+        |    zhcgx
+        |     yyy
+        |      y;
+    cell_t* maybe_res = hole;
+    if (w->type == 'r') maybe_res = w;
+    else if (x->type == 'r') maybe_res = x;
+    else if (y->type == 'r') maybe_res = y;
+    else if (z->type == 'r') maybe_res = z;
+    remember_and_place(cell, 0, a, maybe_res);
+    remember_and_place(cell, 1, b, maybe_res);
+    remember_and_place(cell, 2, c, maybe_res);
+    remember_and_place(cell, 3, d, maybe_res);
+    remember_and_place(cell, 4, e, maybe_res);
+    remember_and_place(cell, 5, f, maybe_res);
+    remember_and_place(cell, 6, g, maybe_res);
+    remember_and_place(cell, 7, h, maybe_res);
+}
+
 
 // data is {tracker, stored index, stored character}
 void update_isolater(cell_t* cell) {
-    if (randp(500)) {
+    if (randp(6)) {
         diffuse(cell, 1);
         return;
     }
@@ -177,15 +234,10 @@ void update_isolater(cell_t* cell) {
         | aa.aa
         |  aaa
         |   a;
-    // consume a res to replicate self or stored string
-    if (a->type == 'r') {
-        if (randp(2)) {
-            copy_cell(a, cell);
-        } else {
-            copy_cell(a, cell);
-            a->type = 's';
-        }
-
+    // consume a res to stored string if present
+    if (a->type == 'r' && cell->data[0] != 0) {
+        copy_cell(a, cell);
+        a->type = 's';
         return;
     }
     if (a->type != 's')
@@ -208,18 +260,17 @@ void update_isolater(cell_t* cell) {
     }
 }
 
-
-
-
 void step(grid_t* grid) {
     int i = rand() % GRID_SIZE;
     int j = rand() % GRID_SIZE;
     cell_t* cell = (*grid)[i][j];
     switch (cell->type) {
+        case 'm': update_rememberer(cell); break;
         case 'i': update_isolater(cell); break;
         case 'd': update_dreg(cell); break;
         case 'r': update_res(cell); break;
         case 's': update_string(cell); break;
+        case 'w': break;
         default:
             clear_cell(cell);
     }

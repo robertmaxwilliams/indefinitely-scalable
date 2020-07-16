@@ -11,9 +11,10 @@
 
 
 unsigned int color_table[256];
-int sps = 500000;
+//int sps = 500000;
+int sps = (WORLD_SIZE * WORLD_SIZE * GRID_SIZE * GRID_SIZE * 60) / 60;
 int placer_index = 1;
-char placer_types[] = " isdr           ";
+char placer_types[] = " isdrwm           ";
 int data_select = 0;
 
 #define IN_SIZE 256
@@ -162,7 +163,7 @@ int poll_events(int* sps, world_t* world) {
             iter(i, GRID_SIZE) {
                 iter(j, GRID_SIZE) {
                     (*(*world)[m][n])[i][j]->type = placer_types[placer_index];
-                    memset((*(*world)[m][n])[i][j]->data, 128, DATA_SIZE);
+                    memset((*(*world)[m][n])[i][j]->data, 0, DATA_SIZE);
                 }
             }
         }
@@ -174,11 +175,13 @@ int poll_events(int* sps, world_t* world) {
                     close_window();
                     return 1;
                 case SDLK_COMMA:
-                    *sps *= 0.75;
+                    *sps /= 10;
+                    if (*sps < 16)
+                        *sps = 16;
                     printf("sps = %d\n", *sps);
                     break;
                 case SDLK_PERIOD:
-                    *sps /= 0.75;
+                    *sps *= 10;
                     printf("sps = %d\n", *sps);
                     break;
                 case SDLK_1: placer_index = 1; break;
@@ -241,6 +244,15 @@ void print_in_buff_to_world(world_t world) {
     }
 }
 
+void update_world(world_t world, int steps) {
+    iter(i, steps) {
+        int n = rand() % WORLD_SIZE;
+        int m = rand() % WORLD_SIZE;
+        grid_t* grid = world[m][n];
+        step(grid);
+    }
+}
+
 int main() {
     // make read non-blocking
     int flags = fcntl(0, F_GETFL, 0);
@@ -251,7 +263,7 @@ int main() {
     hole->up = hole;
     hole->down = hole;
 
-    srand(123459);
+    srand(1234590);
     iter(i, 256) {
         color_table[i] = rand() << 8;
     }
@@ -371,55 +383,50 @@ int main() {
         }
     }
 
-    int foo = 0;
-    int num_events = 0;
-    int num_sites = WORLD_SIZE*WORLD_SIZE * GRID_SIZE*GRID_SIZE;
+    double num_sites = WORLD_SIZE*WORLD_SIZE * GRID_SIZE*GRID_SIZE;
     graphics_init();
-    clock_t last_time = clock();
     printf("      0123456789\n");
     printf("nums: %s\n", placer_types);
 
     while (1) {
 
-        if (foo%sps == 0) {
-            memset(in_buff, 0, IN_SIZE);
-            int status = read(STDIN_FILENO, in_buff, IN_SIZE);
+        // physics steps
+        clock_t update_start = clock();
+        update_world(world, sps);
+        double seconds_to_update = ((double) clock() - update_start)/ CLOCKS_PER_SEC;
 
-            clock_t now_time = clock();
-            clock_t time_diff = now_time - last_time;
-            float seconds_passed = ((float) time_diff)/ CLOCKS_PER_SEC;
-            if (status != -1) {
-                if (strlen(in_buff) > 1) {
-                    in_buff[strlen(in_buff)-1] = '\0';
-                    printf("Got: %s\n", in_buff);
-                    print_in_buff_to_world(world);
-                } else {
-                    scan_for_strings(&world);
-                    printf("AER = %6.6f , FPS = %6.6f\n", ((float)num_events)/(seconds_passed * num_sites),
-                            1.0/seconds_passed);
-                }
+        // drawing step
+        clock_t render_start = clock();
+        draw_world(world);
+        double seconds_to_render = ((double) clock() - render_start)/ CLOCKS_PER_SEC;
 
+        double seconds_to_wait = (1.0/60.0) - seconds_to_render - seconds_to_update;
+        if (seconds_to_wait < 0)
+            seconds_to_wait = 0;
+
+        // terminal keyboard input
+        SDL_Delay(seconds_to_wait/1000);
+        memset(in_buff, 0, IN_SIZE);
+        int status = read(STDIN_FILENO, in_buff, IN_SIZE);
+        if (status != -1) {
+            if (strlen(in_buff) > 1) {
+                in_buff[strlen(in_buff)-1] = '\0';
+                printf("Got: %s\n", in_buff);
+                print_in_buff_to_world(world);
+            } else {
+                scan_for_strings(&world);
+                double seconds_passed = seconds_to_render + seconds_to_update + seconds_to_wait;
+                printf("AER = %6.6f , FPS = %6.6f\n", ((double)sps)/(seconds_passed * num_sites),
+                        1.0/seconds_passed);
+                printf("render = %6.6f ms, physics = %6.6f ms, wait = %6.6f ms\n", seconds_to_render*1000, 
+                        seconds_to_update*1000, seconds_to_wait*1000);
             }
-            //printf("      0123456789\n");
-            //printf("nums: %s\n", placer_types);
-            //printf("AER = %6.6f , FPS = %6.6f\n", ((float)num_events)/(seconds_passed * num_sites),
-            //        1.0/seconds_passed);
-            if (poll_events(&sps, &world))
-                return 1;
-            //print_world(world);
-            draw_world(world);
-            //printf("%d\n", foo);
-            //usleep(1000*60);
-            last_time = now_time;
-            num_events = 0;
-        }
-        int n = rand() % WORLD_SIZE;
-        int m = rand() % WORLD_SIZE;
-        grid_t* grid = world[m][n];
-        step(grid);
 
-        foo++;
-        num_events++;
+        }
+
+        // X keyboard and mouse input
+        if (poll_events(&sps, &world))
+            return 1;
     }
 }
 
