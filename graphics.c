@@ -25,10 +25,15 @@ int clamp(int x, int min, int max) {
 void draw(int x, int y, unsigned int color1, unsigned int color2) {
     for (int i = 0; i < SCALE; i++) {
         for (int j = 0; j < SCALE; j++) {
+            //macro to "optimize out" code that wouldn't do anything for very tiny cell scale
+#if BORDER > 0
             if (i < BORDER || i+BORDER >= SCALE || j < BORDER || j+BORDER >= SCALE)
                 pixels[SCALE*x+i + (SCALE*y+j)*(WINDOW_WIDTH)] = color1;
             else
                 pixels[SCALE*x+i + (SCALE*y+j)*(WINDOW_WIDTH)] = color2;
+#else
+            pixels[SCALE*x+i + (SCALE*y+j)*(WINDOW_WIDTH)] = color1;
+#endif
         }
     }
 }

@@ -2,7 +2,7 @@
 #define CONSTANTS_HEADER_H
 
 
-#define WORLD_SIZE 20
+#define WORLD_SIZE 40
 #define SCALE 16
 #define BORDER  (SCALE/4)
 #define SIDEBAR  50
