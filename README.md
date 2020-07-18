@@ -1,7 +1,8 @@
 
 # Installation
 
-```make all
+```
+make
 ./main
 ```
 
@@ -9,8 +10,10 @@ Requirements:
 - python3
 - SDL2
 - makeheaders (todo download and build this requirement from web)
-- standard \*nix tools: make, gcc. Honestly, if your computer doesn't have
+- standard \*nix tools: make, gcc, curl. Honestly, if your computer doesn't have
 those it's hard to call it a computer.
+
+If you're on windows, you might be able to do this with Cygwin.
 
 # User interface
 
