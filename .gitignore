@@ -6,3 +6,4 @@ main
 behave.out.c
 behave.out.h
 behave.h
+*.dat

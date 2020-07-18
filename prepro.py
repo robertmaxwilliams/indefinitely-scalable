@@ -6,6 +6,8 @@ def ascii_to_grid(string):
     string = string.replace('|', '')
     letters = []
     lines = string.split('\n')
+    special_line = lines[0]
+    lines = lines[1:]
     for i, line in enumerate(lines):
         for j, c in enumerate(line):
             if c == '.':
@@ -16,7 +18,24 @@ def ascii_to_grid(string):
     out = []
     for i, j, c in letters:
         out.append((i-center_i, j-center_j, c))
+    return out, special_line
+
+def rotate_letters(letters, rotation):
+    ''' rotation should be 0 to 4 '''
+    out = []
+    for (i, j, c) in letters:
+        if rotation == 0:
+            out.append((i, j, c))
+        elif rotation == 1:
+            out.append((j, -i, c))
+        elif rotation == 2:
+            out.append((-i, -j, c))
+        elif rotation == 3:
+            out.append((-j, i, c))
+        else:
+            raise Exception()
     return out
+
 
 def pos_part(n):
     if n > 0:
@@ -50,26 +69,50 @@ def sub_between(string, starter, ender, subfun):
             raise Exception("oh no your strings are all wrong", stuff)
     return ''.join(out)
 
-def process_ascii_art(string):
-    out = []
-    
-    letters = ascii_to_grid(string)
+def third(ls):
+    return ls[2]
 
-    def third(ls):
-        return ls[2]
+def grid_to_code(letters):
+    code = []
+    declarations = []
     for _, group_iter in itertools.groupby(sorted(letters,key=third), key=third):
         group = list(group_iter)
         if len(group) == 1:
             (i, j, c) = group[0]
-            out.append(f'cell_t* {c} = cell{chainer(i, j)};\n')
+            declarations.append(f'cell_t* {c};')
+            code.append(f'{c} = cell{chainer(i, j)};')
         else:
             var_name = group[0][2]
-            out.append(f'cell_t* {var_name};\n')
-            out.append(f'switch(rand() % {len(group)})' + ' {\n')
+            declarations.append(f'cell_t* {var_name};')
+            code.append(f'switch(rand() % {len(group)})' + ' {')
             for (n, (i, j, c)) in enumerate(group):
-                out.append(f'\tcase {n}: {c} = cell{chainer(i, j)}; break;\n')
-            out.append('}\n')
-    return ''.join(out)
+                code.append(f'\tcase {n}: {c} = cell{chainer(i, j)}; break;')
+            code.append('}')
+    return code, declarations
+
+def process_ascii_art(string):
+    declarations = []
+    code = []
+    
+    letters, special_line = ascii_to_grid(string)
+
+
+
+    if 'ROTATE' in special_line:
+        rotater_code = special_line.split('ROTATE')[1].strip()
+        code.append('// Rotating')
+        code.append(f'switch(({rotater_code})%4) ' + '{')
+        for i in range(4):
+            code.append(f'case {i}:')
+            more_code, declarations = grid_to_code(rotate_letters(letters, i))
+            code += more_code
+            code.append(f'break;')
+        code.append('}')
+
+    else:
+        code, declarations = grid_to_code(letters)
+
+    return '\n'.join(declarations + code)
 
 
 if __name__ == "__main__":

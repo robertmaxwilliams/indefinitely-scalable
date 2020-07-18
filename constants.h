@@ -3,13 +3,11 @@
 
 
 #define GRID_SIZE 10
-#define WORLD_SIZE 4
+#define WORLD_SIZE 5
 #define SCALE 16
 #define BORDER 5
-#define WINDOW_WIDTH (GRID_SIZE*WORLD_SIZE * SCALE)
+#define WINDOW_WIDTH (GRID_SIZE*WORLD_SIZE * SCALE) + 2 * SCALE
 #define WINDOW_HEIGHT (GRID_SIZE*WORLD_SIZE * SCALE)
-
-
 
 #define iter(i_var, i_limit) for (int i_var=0;i_var<i_limit;i_var++)
 #define ifrand(n) if (rand() % n == 0)
@@ -31,6 +29,9 @@ typedef grid_t *world_t[WORLD_SIZE][WORLD_SIZE];
 
 // hole is used like NULL except it points to itself, so hole->left is hole, and so on.
 cell_t* hole;
+
+typedef void (*update_function_type)(cell_t*);
+
 
 #endif
 
