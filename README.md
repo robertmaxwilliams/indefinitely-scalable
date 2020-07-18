@@ -43,6 +43,11 @@ Terminal:
 - Press enter with nothing to print out Average Event Rate, Frames Per Second and other info
 - Type something and press enter to write that string into the world wherever you last clicked.
 
+# Changing size
+
+There's no way to change size while it is running, but if you open `constants.h` you can 
+change `WORLD_SIZE` to get a bigger world and `SCALE` to choose how many pixels each cell takes up.
+
 # Build process
 
 Because I'm lazy, the build process is a bit convoluted. Thankfully
@@ -81,7 +86,7 @@ the bottom of the file. Then, add its name in all  caps to the enum `CELL_TYPES`
 Finally, find a color for it (I've been getting mine from 
 [htmlcolorcodes.com](https://htmlcolorcodes.com/)) and add is to `CELL_COLORS`.
 
-It's very important these 3 arrays (well one is an enum, but it looks array-like)
+It's very important these 3 arrays (well, one is an enum, but it looks array-like)
 have all of their elements in sync, otherwise
 the names, colors, and update functions of the atoms could get mixed up. Just always 
 add to the end of the arrays and you'll be fine.
