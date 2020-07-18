@@ -21,6 +21,7 @@ int clamp(int x, int min, int max) {
         return max;
     return x;
 }
+
 void draw(int x, int y, unsigned int color1, unsigned int color2) {
     for (int i = 0; i < SCALE; i++) {
         for (int j = 0; j < SCALE; j++) {
@@ -32,6 +33,26 @@ void draw(int x, int y, unsigned int color1, unsigned int color2) {
     }
 }
 
+void draw_sidebar(int row, int column, unsigned int color1, unsigned int color2) {
+    unsigned int color;
+    int border = SIDEBAR / 4;
+    for (int i = 0; i < SIDEBAR; i++) {
+        for (int j = 0; j < SIDEBAR; j++) {
+            if (i < border || i+border >= SIDEBAR || j < border || j+border >= SIDEBAR)
+                color = color1;
+            else
+                color = color2;
+            pixels[SCALE*WORLD_SIZE+i + SIDEBAR*column + (SIDEBAR*row+j)*(WINDOW_WIDTH)] = color;
+        }
+    }
+}
+
+// kind of an inverse of draw_sidebar
+int click_sidebar(int x, int y) {
+    int column = (x - SCALE*WORLD_SIZE) / SIDEBAR;
+    int row = (y / SIDEBAR);
+    return column * NUM_SIDEBAR_ROWS + row;
+}
 
 void graphics_init() {
 

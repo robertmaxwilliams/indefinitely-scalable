@@ -234,10 +234,10 @@ void update_riser(cell_t* cell) {
 
 
 // helper for update_rememberer
-void remember_and_place(cell_t* cell, int i, cell_t* neigh, cell_t* maybe_res) {
+void remember_and_place(cell_t* cell, unsigned char i, cell_t* neigh, cell_t* maybe_res) {
     if (neigh->type == REM) {
-        cell->data[i] = 1;
-    } else if (maybe_res->type == RES && cell->data[i] == 1) {
+        cell->data[i%10] = 1;
+    } else if (maybe_res->type == RES && cell->data[i%10] == 1) {
         swap_cells(neigh, maybe_res);
         clear_cell(neigh);
         neigh->type = REM;
@@ -248,7 +248,7 @@ void remember_and_place(cell_t* cell, int i, cell_t* neigh, cell_t* maybe_res) {
 // in the following way: {top, topright, right, rightbuttom, bottom, bl, left, lt, empty, rot}
 void update_rememberer(cell_t* cell) {
     cell->data[9] = rand() % 4;
-    int rot = cell->data[9];
+    unsigned char rot = cell->data[9];
 
     PATTERN ROTATE rot
         |  r
@@ -458,13 +458,31 @@ void dont_update(cell_t* cell) {
     (void)(cell);
 }
 
-// data is {imprint1, imprint2}
+unsigned char dec(unsigned char x) {
+    if (x > 0)
+        return x-1;
+    return 0;
+}
+
+unsigned char inc(unsigned char x) {
+    if (x < 255)
+        return x + 1;
+    return x;
+}
+
+// data is {imprint1, imprint2, deather}
 // imprint2 is made into down_dropper
+// imprint1 is made into up_riser or whatever
+// deather is incremented when we don't see a string and reset when we do
 void update_strings_splitter(cell_t* cell) {
     PATTERN
         |  a
         | a.a
         |  a;
+    if (cell->data[2] > 100) {
+        cell->type = RES;
+        return;
+    }
     if (a->type == STRING) {
         unsigned char string_id = a->data[0];
         if (cell->data[0] == 0) {
@@ -473,14 +491,18 @@ void update_strings_splitter(cell_t* cell) {
             if (string_id != cell->data[0])
                 cell->data[1] = string_id;
         } else {
+            cell->data[2] = 0; // reset death clock
             if (string_id == cell->data[1])
                 a->type = FALLER;
             else if (string_id == cell->data[0])
                 a->type = RISER;
         }
     } else if (a->type == RES) {
+        if (randp(5)) cell->data[2] = inc(cell->data[2]);
         if (cell->data[0] != 0 && cell->data[1] != 0)
             copy_cell(a, cell);
+    } else {
+        if (randp(5)) cell->data[2] = inc(cell->data[2]);
     }
     diffuse(cell, 3);
 }
@@ -523,10 +545,9 @@ update_function_type update_functions[256] = {
     // the rest should be void
 };
 
-void step(grid_t* grid) {
-    int i = rand() % GRID_SIZE;
-    int j = rand() % GRID_SIZE;
-    cell_t* cell = (*grid)[i][j];
+void step(world_t world, int x, int y) {
+    cell_t* cell = world[x][y];
+
 
     update_function_type update_function = update_functions[cell->type];
     if (update_function != NULL) {

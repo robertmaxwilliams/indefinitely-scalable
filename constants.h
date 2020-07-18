@@ -2,12 +2,14 @@
 #define CONSTANTS_HEADER_H
 
 
-#define GRID_SIZE 10
-#define WORLD_SIZE 5
+#define WORLD_SIZE 20
 #define SCALE 16
-#define BORDER 5
-#define WINDOW_WIDTH (GRID_SIZE*WORLD_SIZE * SCALE) + 2 * SCALE
-#define WINDOW_HEIGHT (GRID_SIZE*WORLD_SIZE * SCALE)
+#define BORDER  (SCALE/4)
+#define SIDEBAR  50
+#define NUM_SIDEBAR_COLUMNS 2
+#define WINDOW_HEIGHT (WORLD_SIZE * SCALE)
+#define NUM_SIDEBAR_ROWS (WINDOW_HEIGHT / SIDEBAR)
+#define WINDOW_WIDTH ((WORLD_SIZE * SCALE) + NUM_SIDEBAR_COLUMNS * SIDEBAR)
 
 #define iter(i_var, i_limit) for (int i_var=0;i_var<i_limit;i_var++)
 #define ifrand(n) if (rand() % n == 0)
@@ -20,12 +22,11 @@ typedef struct _cell_t {
     struct _cell_t* down;
     struct _cell_t* left;
     struct _cell_t* right;
-    char type;
+    unsigned char type;
     unsigned char data[DATA_SIZE]; // data is only copied around when the cell wants to
 } cell_t;
 
-typedef cell_t *grid_t[GRID_SIZE][GRID_SIZE];
-typedef grid_t *world_t[WORLD_SIZE][WORLD_SIZE];
+typedef cell_t *world_t[WORLD_SIZE][WORLD_SIZE];
 
 // hole is used like NULL except it points to itself, so hole->left is hole, and so on.
 cell_t* hole;

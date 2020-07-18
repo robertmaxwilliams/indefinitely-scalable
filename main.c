@@ -13,12 +13,12 @@
 #define BLANK_CELL_TYPE 0
 #define STRING_CELL_TYPE 1
 
-//int sps = 500000;
-int sps = (WORLD_SIZE * WORLD_SIZE * GRID_SIZE * GRID_SIZE * 60) / 60;
+// start out at about 60 AER
+int sps = (WORLD_SIZE * WORLD_SIZE * 60) / 60;
 int placer_index = 1;
 
-int last_clicked_m = 0;
-int last_clicked_n = 0;
+int last_clicked_x = 0;
+int last_clicked_y = 0;
 
 int data_select = 0;
 
@@ -40,26 +40,23 @@ unsigned int rgb_to_bgra(unsigned int rgb) {
 
 void draw_world(world_t world) {
     SDL_LockTexture(buffer, NULL, (void**) &pixels, &pitch);
-    iter(m, WORLD_SIZE) { 
-        iter(n, WORLD_SIZE) {
-            grid_t* grid = world[m][n];
-            iter(i, GRID_SIZE) { 
-                iter(j, GRID_SIZE) {
-                    unsigned char t = (*grid)[i][j]->type;
-                    unsigned char d = (*grid)[i][j]->data[data_select];
-                    unsigned int color1 = rgb_to_bgra(cell_colors[t]);
-                    unsigned int color2 = t == BLANK_CELL_TYPE ? color1 : rgb_to_bgra(data_colors[d]);
-                    draw(n*GRID_SIZE+j, m*GRID_SIZE+i, color1, color2);
-                }
-            }
+    iter(x, WORLD_SIZE) {
+        iter(y, WORLD_SIZE) {
+            unsigned char t = world[x][y]->type;
+            unsigned char d = world[x][y]->data[data_select];
+            unsigned int color1 = rgb_to_bgra(cell_colors[t]);
+            unsigned int color2 = t == BLANK_CELL_TYPE ? color1 : rgb_to_bgra(data_colors[d]);
+            draw(x, y, color1, color2);
         }
     }
 
     // draw menu bar
-    iter(i, WORLD_SIZE*GRID_SIZE) {
-        unsigned int color1 = rgb_to_bgra(cell_colors[i]);
-        unsigned int color2 = i == placer_index ? 0xffffff00 : 0;
-        draw(GRID_SIZE*WORLD_SIZE+1, i, color1, color2);
+    iter(column, NUM_SIDEBAR_COLUMNS) {
+        iter(row, NUM_SIDEBAR_ROWS) {
+            unsigned int color1 = rgb_to_bgra(cell_colors[row+ column*NUM_SIDEBAR_ROWS]);
+            unsigned int color2 = (row+column*NUM_SIDEBAR_ROWS) == placer_index ? 0xffffff00 : 0;
+            draw_sidebar(row, column, color1, color2);
+        }
     }
     SDL_UnlockTexture(buffer);
     SDL_RenderCopy(renderer, buffer, NULL, NULL);
@@ -73,23 +70,18 @@ int find(char* arr, char x, int size) {
     return -1;
 }
     
-void scan_for_strings(world_t* world) {
+void scan_for_strings(world_t world) {
     char strings[256][IN_SIZE] = {0};
     char any[256] = {0};
-    iter(m, WORLD_SIZE) { 
-        iter(n, WORLD_SIZE) {
-            grid_t* grid = (*world)[m][n];
-            iter(i, GRID_SIZE) { 
-                iter(j, GRID_SIZE) {
-                    cell_t* cell = (*grid)[i][j];
-                    if (cell->type == STRING_CELL_TYPE) {
-                        unsigned char id = cell->data[0];
-                        unsigned char string_index = cell->data[1];
-                        unsigned char c = cell->data[2];
-                        strings[id][string_index] = c;
-                        any[id] = 1;
-                    }
-                }
+    iter(x, WORLD_SIZE) { 
+        iter(y, WORLD_SIZE) {
+            cell_t* cell = world[x][y];
+            if (cell->type == STRING_CELL_TYPE) {
+                unsigned char id = cell->data[0];
+                unsigned char string_index = cell->data[1];
+                unsigned char c = cell->data[2];
+                strings[id][string_index] = c;
+                any[id] = 1;
             }
         }
     }
@@ -111,51 +103,51 @@ void scan_for_strings(world_t* world) {
     }
 }
 
-void set_cell(world_t* world, int x, int y) {
-    int i = y % GRID_SIZE;
-    int j = x % GRID_SIZE;
-    int m = y / GRID_SIZE;
-    int n = x / GRID_SIZE;
-    if (m >= WORLD_SIZE || n >= WORLD_SIZE || m < 0 || n < 0) {
+void set_cell(world_t world, int x, int y) {
+    if (x >= WORLD_SIZE || y >= WORLD_SIZE || x < 0 || y < 0) {
         printf("tried to place outside of bounds\n");
         return;
     }
-    (*(*world)[m][n])[i][j]->type = placer_index;
-    memset((*(*world)[m][n])[i][j]->data, 0, DATA_SIZE);
+    world[x][y]->type = placer_index;
+    memset(world[x][y]->data, 0, DATA_SIZE);
 }
 
-cell_t* get_cell(world_t* world, int x, int y) {
-    int i = y % GRID_SIZE;
-    int j = x % GRID_SIZE;
-    int m = (y / GRID_SIZE) % WORLD_SIZE;
-    int n = (x / GRID_SIZE) % WORLD_SIZE;
-    if (m >= WORLD_SIZE || n >= WORLD_SIZE || m < 0 || n < 0) {
-        printf("tried to get cell outside of bounds\n");
+cell_t* get_cell(world_t world, int x, int y) {
+    if (x >= WORLD_SIZE || y >= WORLD_SIZE || x < 0 || y < 0) {
+        printf("tried to place outside of bounds\n");
         return hole;
     }
-    if (i >= GRID_SIZE || j >= GRID_SIZE || i < 0 || j < 0) {
-        printf("tried to get cell outside of grid\n");
-        return hole;
-    }
-    return (*(*world)[m][n])[i][j];
+    return world[x][y];
 }
 
-void gamma_ray(world_t* world) {
+void gamma_ray(world_t world) {
 
-    int x = rand() % (WORLD_SIZE * GRID_SIZE);
-    int y = rand() % (WORLD_SIZE * GRID_SIZE);
+    int x = rand() % WORLD_SIZE;
+    int y = rand() % WORLD_SIZE;
     cell_t* cell = get_cell(world, x, y);
 
     int byte_select = rand() % (DATA_SIZE + 1);
     unsigned char mask = 1 << (rand() % 8);
+    // initially I was doing bit flips, but byte randomization is more uniform
+    // that is, bit flips cause certain types and states to be more likely than they should
+    // based on bit distance and optimizing for that is too much trouble.
+    // In the future, a greycode layout of the types woudld resolve this in a nice way.
     if (byte_select < DATA_SIZE) 
-        cell->data[byte_select] ^= mask;
+        cell->data[byte_select] = rand() % 256;
     else
-        cell->type ^= mask;
+        cell->type = rand() % 256;
+}
+
+void print_cell(cell_t* cell) {
+    printf("type: %3d, data = [", cell->type);
+    iter (i, 10) {
+        printf("%3d, ", cell->data[i]);
+    }
+    printf("]\n");
 }
 
 
-int poll_events(int* sps, world_t* world) {
+int poll_events(int* sps, world_t world) {
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
             close_window();
@@ -168,8 +160,8 @@ int poll_events(int* sps, world_t* world) {
             int y = event.button.y / SCALE;
             
             // click on menu  bar
-            if (x >= GRID_SIZE*WORLD_SIZE) {
-                placer_index = y;
+            if (x >= WORLD_SIZE) {
+                placer_index = click_sidebar(event.button.x, event.button.y);
                 continue;
             }
 
@@ -179,23 +171,26 @@ int poll_events(int* sps, world_t* world) {
                 }
             }
 
-            int m = y / GRID_SIZE;
-            int n = x / GRID_SIZE;
-            last_clicked_n = n; // used to choose where string are laid down
-            last_clicked_m = m;
+            last_clicked_x = x; // used to choose where string are laid down
+            last_clicked_y = y;
         }
         else if ((event.type == SDL_MOUSEBUTTONDOWN ||  event.type == SDL_MOUSEMOTION) 
                 && event.button.button == SDL_BUTTON_MIDDLE) {
             int x = event.button.x / SCALE;
             int y = event.button.y / SCALE;
-            int m = x / GRID_SIZE;
-            int n = y / GRID_SIZE;
 
-            iter(i, GRID_SIZE) {
-                iter(j, GRID_SIZE) {
-                    set_cell(world, m * GRID_SIZE + i, n * GRID_SIZE + j);
+            iter(i, 16) {
+                iter(j, 16) {
+                    set_cell(world, x+i, y+j);
                 }
             }
+        }
+
+        else if ((event.type == SDL_MOUSEBUTTONDOWN ||  event.type == SDL_MOUSEMOTION) 
+                && event.button.button == SDL_BUTTON_RIGHT) {
+            int x = event.button.x / SCALE;
+            int y = event.button.y / SCALE;
+            print_cell(get_cell(world, x, y));
         }
 
         else if (event.type == SDL_KEYDOWN) {
@@ -211,8 +206,8 @@ int poll_events(int* sps, world_t* world) {
                         printf("Error in creating file. Aborting.\n");
                         break;
                     }
-                    iter(x, GRID_SIZE * WORLD_SIZE) {
-                        iter(y, GRID_SIZE * WORLD_SIZE) {
+                    iter(x, WORLD_SIZE) {
+                        iter(y, WORLD_SIZE) {
                             cell_t* cell = get_cell(world, x, y);
                             fwrite(&cell->type, sizeof(unsigned char), 1, fp);  
                             fwrite(&cell->data, sizeof(unsigned char), DATA_SIZE, fp);  
@@ -227,8 +222,8 @@ int poll_events(int* sps, world_t* world) {
                         printf("Error in opening file. Aborting.\n");
                         break;
                     }
-                    iter(x, GRID_SIZE * WORLD_SIZE) {
-                        iter(y, GRID_SIZE * WORLD_SIZE) {
+                    iter(x, WORLD_SIZE) {
+                        iter(y, WORLD_SIZE) {
                             cell_t* cell = get_cell(world, x, y);
                             fread(&cell->type, sizeof(unsigned char), 1, fp);
                             fread(&cell->data, sizeof(unsigned char), DATA_SIZE, fp);
@@ -240,12 +235,15 @@ int poll_events(int* sps, world_t* world) {
 
                 case SDLK_COMMA:
                     *sps /= 10;
-                    if (*sps < 16)
-                        *sps = 16;
+                    if (*sps < 1)
+                        *sps = 1;
                     printf("sps = %d\n", *sps);
                     break;
                 case SDLK_PERIOD:
-                    *sps *= 10;
+                    if (*sps <= 1)
+                        *sps = 16;
+                    else
+                        *sps *= 10;
                     printf("sps = %d\n", *sps);
                     break;
                 case SDLK_1: placer_index = 1; break;
@@ -259,7 +257,7 @@ int poll_events(int* sps, world_t* world) {
                 case SDLK_9: placer_index = 9; break;
                 case SDLK_0: placer_index = 0; break;
                 case SDLK_g:
-                    iter(i, 1) {
+                    iter(i, 500) {
                         gamma_ray(world);
                     }
                     break;
@@ -302,9 +300,9 @@ void print_in_buff_to_world(world_t world) {
         // find next empty square
         while (1) {
             // if we've taken up more than one grid, quit
-            if (i+x >= GRID_SIZE * GRID_SIZE)
+            if (i+x >= 256)
                 return;
-            cell = (*world[last_clicked_m][last_clicked_n])[(i+x)%GRID_SIZE][(i+x)/GRID_SIZE];
+            cell = get_cell(world, last_clicked_x + (i + x)%16, last_clicked_y + (i+x)/16);
             if (cell->type == BLANK_CELL_TYPE) {
                 break;
             }
@@ -319,10 +317,9 @@ void print_in_buff_to_world(world_t world) {
 
 void update_world(world_t world, int steps) {
     iter(i, steps) {
-        int n = rand() % WORLD_SIZE;
-        int m = rand() % WORLD_SIZE;
-        grid_t* grid = world[m][n];
-        step(grid);
+        int x = rand() % WORLD_SIZE;
+        int y = rand() % WORLD_SIZE;
+        step(world, x, y);
     }
 }
 
@@ -340,17 +337,11 @@ int main() {
     world_t world;
 
     // make 'em
-    iter(m, WORLD_SIZE) { 
-        iter(n, WORLD_SIZE) {
-            grid_t* gridp = malloc(sizeof(grid_t));
-            world[m][n] = gridp;
-            iter(i, GRID_SIZE) { 
-                iter(j, GRID_SIZE) {
-                    (*gridp)[i][j] = malloc(sizeof(cell_t));
-                    memset((*gridp)[i][j]->data, 0, DATA_SIZE); // probably not needed
-                    (*gridp)[i][j]->type = BLANK_CELL_TYPE;
-                }
-            }
+    iter(x, WORLD_SIZE) { 
+        iter(y, WORLD_SIZE) {
+            world[x][y] = malloc(sizeof(cell_t));
+            memset(world[x][y]->data, 0, DATA_SIZE); // probably not needed
+            world[x][y]->type = BLANK_CELL_TYPE;
         }
     }
 
@@ -361,82 +352,41 @@ int main() {
 
 
     /* The array is organized like this:
-     * (*world[m][n])[i][j]->type = whatever;
+     * world[x][y] = whatever;
      *
-     *  n →
-     *  m┌───────────────────────┐
-     *  ↓│                       │
-     *   │ ┌────┐ ┌────┐ ┌────┐  │
-     *   │ │    │ │    │ │    │  │
-     *   │ │    │ │    │ │    │  │
-     *   │ └────┘ └────┘ └────┘  │
-     *   │       j →             │
-     *   │ ┌────┐i┌────┐ ┌────┐  │
-     *   │ │    │↓│    │ │    │  │
-     *   │ │    │ │    │ │    │  │
-     *   │ └────┘ └────┘ └────┘  │
-     *   │                       │
-     *   │ ┌────┐ ┌────┐ ┌────┐  │
-     *   │ │    │ │    │ │    │  │
-     *   │ │    │ │    │ │    │  │
-     *   │ └────┘ └────┘ └────┘  │
-     *   └───────────────────────┘
+     *  x →    
+     *  y┌────┐
+     *  ↓│    │
+     *   │    │
+     *   └────┘
      */
 
     // link em' up
-    iter(m, WORLD_SIZE) { 
-        iter(n, WORLD_SIZE) {
-            iter(i, GRID_SIZE) { 
-                iter(j, GRID_SIZE) {
-                    // i down (positive)
-                    if (i+1 < GRID_SIZE) {
-                        (*world[m][n])[i][j]->down = 
-                            (*world[m][n])[i+1][j];
-                    } else if (m+1 < WORLD_SIZE) {
-                        (*world[m][n])[i][j]->down = 
-                            (*world[m+1][n])[0][j];
-                    } else {
-                        (*world[m][n])[i][j]->down = hole;
-                    }
+    iter(x, WORLD_SIZE) { 
+        iter(y, WORLD_SIZE) {
+            if (y+1 < WORLD_SIZE)
+                world[x][y]->down = world[x][y+1];
+            else
+                world[x][y]->down = hole;
 
-                    // i up (negative)
-                    if (i-1 >= 0) {
-                        (*world[m][n])[i][j]->up = 
-                            (*world[m][n])[i-1][j];
-                    } else if (m-1 >= 0) {
-                        (*world[m][n])[i][j]->up = 
-                            (*world[m-1][n])[GRID_SIZE-1][j];
-                    } else {
-                        (*world[m][n])[i][j]->up = hole;
-                    }
+            if (y-1 >= 0)
+                world[x][y]->up = world[x][y-1];
+            else
+                world[x][y]->up = hole;
 
-                    // j right (positive)
-                    if (j+1 < GRID_SIZE) {
-                        (*world[m][n])[i][j]->right = 
-                            (*world[m][n])[i][j+1];
-                    } else if (n+1 < WORLD_SIZE) {
-                        (*world[m][n])[i][j]->right = 
-                            (*world[m][n+1])[i][0];
-                    } else {
-                        (*world[m][n])[i][j]->right = hole;
-                    }
+            if (x+1 < WORLD_SIZE)
+                world[x][y]->right = world[x+1][y];
+            else
+                world[x][y]->right = hole;
 
-                    // j left (negative)
-                    if (j-1 >= 0) {
-                        (*world[m][n])[i][j]->left = 
-                            (*world[m][n])[i][j-1];
-                    } else if (n-1 >= 0) {
-                        (*world[m][n])[i][j]->left = 
-                            (*world[m][n-1])[i][GRID_SIZE-1];
-                    } else {
-                        (*world[m][n])[i][j]->left = hole;
-                    }
-                }
-            }
+            if (x-1 >= 0)
+                world[x][y]->left = world[x-1][y];
+            else
+                world[x][y]->left = hole;
         }
     }
 
-    double num_sites = WORLD_SIZE*WORLD_SIZE * GRID_SIZE*GRID_SIZE;
+    double num_sites = WORLD_SIZE*WORLD_SIZE;
     graphics_init();
 
     while (1) {
@@ -465,7 +415,7 @@ int main() {
                 printf("Got: %s\n", in_buff);
                 print_in_buff_to_world(world);
             } else {
-                scan_for_strings(&world);
+                scan_for_strings(world);
                 double seconds_passed = seconds_to_render + seconds_to_update + seconds_to_wait;
                 printf("AER = %6.6f , FPS = %6.6f\n", ((double)sps)/(seconds_passed * num_sites),
                         1.0/seconds_passed);
@@ -476,7 +426,7 @@ int main() {
         }
 
         // X keyboard and mouse input
-        if (poll_events(&sps, &world))
+        if (poll_events(&sps, world))
             return 1;
     }
 }
