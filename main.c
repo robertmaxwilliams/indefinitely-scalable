@@ -1,12 +1,15 @@
 #include <stdio.h>
+
+// needed for reading and writing and non-blocking read
 #include <fcntl.h>
+#include <unistd.h>
+
 #include <stdlib.h>
 #include <time.h>
-#include <unistd.h>
 #include <SDL2/SDL.h>
+
 #include "constants.h"
 #include "behave.out.h"
-
 #include "graphics.h"
 #include "data_colors.h"
 
