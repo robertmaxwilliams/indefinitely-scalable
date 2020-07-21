@@ -87,6 +87,7 @@ def grid_to_code(letters):
             code.append(f'switch(rand() % {len(group)})' + ' {')
             for (n, (i, j, c)) in enumerate(group):
                 code.append(f'\tcase {n}: {c} = cell{chainer(i, j)}; break;')
+            code.append('\tdefault: return; // should never run but makes compiler happy')
             code.append('}')
     return code, declarations
 

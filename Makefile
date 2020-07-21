@@ -16,6 +16,7 @@ all: build/makeheaders
 		-lSDL2 -fdiagnostics-color=always -o main
 
 build/makeheaders:
+	mkdir -p build/
 	# download makeheaders.c
 	curl https://fossil-scm.org/fossil/raw/a8afb0c00219eec02369ad1c1446e8a5f9d82c60e6f83d95cdc8511fc7001371?at=makeheaders.c \
 		> build/makeheaders.c

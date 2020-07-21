@@ -228,8 +228,10 @@ int poll_events(int* sps, world_t world) {
                     iter(x, WORLD_SIZE) {
                         iter(y, WORLD_SIZE) {
                             cell_t* cell = get_cell(world, x, y);
-                            fread(&cell->type, sizeof(unsigned char), 1, fp);
-                            fread(&cell->data, sizeof(unsigned char), DATA_SIZE, fp);
+                            size_t items_read = fread(&cell->type, sizeof(unsigned char), 1, fp);
+                            if (items_read != 1) printf("WARNING: had trouble reading file");
+                            items_read = fread(&cell->data, sizeof(unsigned char), DATA_SIZE, fp);
+                            if (items_read != DATA_SIZE) printf("WARNING: had trouble reading file");
                         }
                     }
                     fclose(fp);
