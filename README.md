@@ -15,7 +15,7 @@ those it's hard to call it a computer.
 
 ## Windows Instructions (cygwin)
 
-If you're on windows, go to the bottom of the readmy and follow those intructions carefully.
+If you're on windows, go to the bottom of the readme and follow those intructions carefully.
 
 # User interface
 
@@ -209,3 +209,5 @@ make
 
 To run again, you'll have to launch cygwin, `cd` into the repo, and `./build/main`, because double-clicking
 on the exe doesn't give you a proper shell so trying to print to the shell causes it to break.
+
+Also, if you `make clean` you'll have to `make windows-prep` again.
