@@ -4,8 +4,6 @@ C_SOURCE=build/graphics.c build/behave.out.c build/main.c
 SDL2_FILES = /usr/lib/x86_64-linux-gnu/libSDL2.a /usr/lib/x86_64-linux-gnu/libSDL2_image.a /usr/lib/x86_64-linux-gnu/libSDL2main.a /usr/lib/x86_64-linux-gnu/libSDL2_test.a /usr/lib/x86_64-linux-gnu/libSDL2_ttf.a
 
 CC_SDL=`sdl2-config --cflags --libs`
-CC_SDL_STATIC=`sdl2-config --cflags --static-libs `
-
 all: build/makeheaders
 	mkdir -p build/
 	# run out python preprocessor and colortable maker
@@ -19,9 +17,23 @@ all: build/makeheaders
 	./build/makeheaders build/behave.out.c
 	./build/makeheaders build/graphics.c
 	# compile with SDL2 and optimizations
-	gcc $(C_SOURCE) $(C_FLAGS) $(CC_SDL) -o main
-static:
-	gcc $(C_SOURCE) $(C_FLAGS) $(SDL2_FILES) $(CC_SDL_STATIC)  -o main
+	gcc $(C_SOURCE) $(C_FLAGS) $(CC_SDL) -o build/main
+
+test:
+	curl http://eeweb.poly.edu/~yao/EL5123/image/lena_gray.bmp > build/lena.bmp
+	gcc test.c $(C_FLAGS) $(CC_SDL) -o build/test
+
+windows-prep:
+	mkdir -p build/
+	# download sdl2 zip
+	curl https://www.libsdl.org/release/SDL2-2.0.12-win32-x64.zip > build/libsdl.zip
+	# unzip it
+	unzip -d build/ build/libsdl.zip
+	# move it to the name the cygwin's sdl lib expects
+	mv build/SDL2.dll build/cygSDL2-2-0-0.dll
+	# copy in cygwin's main dll in case you didn't put it in your path
+	cp /cygdrive/c/cygwin64/bin/cygwin1.dll ./
+
 build/makeheaders:
 	mkdir -p build/
 	# download makeheaders.c
@@ -30,7 +42,6 @@ build/makeheaders:
 	touch build/makeheaders.c
 	# compile makeheaders.c
 	gcc build/makeheaders.c -std=c99 -o build/makeheaders
-
 
 clean:
 	rm -v build/*

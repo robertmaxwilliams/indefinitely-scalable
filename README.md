@@ -3,7 +3,7 @@
 
 ```
 make
-./main
+./build/main
 ```
 
 Requirements:
@@ -13,7 +13,9 @@ Requirements:
 - standard \*nix tools: make, gcc, curl. Honestly, if your computer doesn't have
 those it's hard to call it a computer.
 
-If you're on windows, you might be able to do this with Cygwin.
+## Windows Instructions (cygwin)
+
+If you're on windows, go to the bottom of the readmy and follow those intructions carefully.
 
 # User interface
 
@@ -157,3 +159,53 @@ instantanious information transmission.
 - Allow zooming and window resizing
 - Make it possible to hook up multiple running programs over a pipe and make a bigger grid!!
 - That last one would put us very close to stage 3.
+
+
+# Windows Instructions (cygwin)
+
+Download 64 bit cygwin: <https://cygwin.com/setup-x86_64.exe>
+
+Run the installer, click next, next , 
+next (install to C:\cygwin64 !! this is important to leave alone), next (download from internet), 
+next (choose a mirror, I just use the first one). Now you are on the "choose packages" screen. 
+If you ever need more packages, re-run the installer and come here. For now, choose "Full" in the view
+dropdown, and search each of the following packages. Some have repeates so make sure the description
+matches. To mark a package for installation, look at the "New" column where most packages say "Skipped"
+and double click it to get the default version.
+
+```
+make : The GNU version of the 'make' utility
+git: Distributed version control system
+curl: Multi-protocol file transfer tool
+libSDL2-devel: Simple DirectMedia Layer core library
+gcc-core : GNU Compiler Collection (C, OpenMP)
+unzip: Info-ZIP decompression utility
+python3: Meta-package for python 3 default version
+```
+
+Hit next and it will install cygwin and the packages. Finally, check that you want a desktop or start menu
+shortcut or whatver, finish the installer, and launch cygwin. Clone this repo into your cygwin home dir and
+then go into the repo by running:
+
+```
+git clone https://github.com/robertmaxwilliams/indefinitely-scalable.git
+cd indefinitely-scalable
+```
+
+Now run the following to put the correct dll's in the build directory (some are downloaded, some are
+copied from C:\cygwin64\bin :
+
+```
+make windows-prep
+```
+
+Finally you can make and run the program as if you were using an actual computer and not some cobbled 
+together hodge podge designed for the illiterate and statistics majors:
+
+```
+make
+./build/main
+```
+
+To run again, you'll have to launch cygwin, `cd` into the repo, and `./build/main`, because double-clicking
+on the exe doesn't give you a proper shell so trying to print to the shell causes it to break.

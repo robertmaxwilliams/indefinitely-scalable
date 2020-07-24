@@ -1,3 +1,5 @@
 main
 *.dat
 build/
+*.un~
+*~
