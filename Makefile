@@ -32,7 +32,7 @@ windows-prep:
 	# move it to the name the cygwin's sdl lib expects
 	mv build/SDL2.dll build/cygSDL2-2-0-0.dll
 	# copy in cygwin's main dll in case you didn't put it in your path
-	cp /cygdrive/c/cygwin64/bin/cygwin1.dll ./
+	cp /cygdrive/c/cygwin64/bin/cygwin1.dll ./build
 
 build/makeheaders:
 	mkdir -p build/
