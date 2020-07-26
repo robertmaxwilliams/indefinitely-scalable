@@ -7,7 +7,7 @@ CC_SDL=`sdl2-config --cflags --libs`
 all: build/makeheaders
 	mkdir -p build/
 	# run out python preprocessor and colortable maker
-	python3 prepro.py behave.c > build/behave.out.c
+	python3 behave_preoprocessor.py  behave.c main-cells.be.c generic.be.c > build/behave.out.c
 	python3 color-tabler.py > build/data_colors.h
 	# copy all the files we need to the staging directory
 	cp graphics.c build/

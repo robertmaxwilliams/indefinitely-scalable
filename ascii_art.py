@@ -97,8 +97,6 @@ def process_ascii_art(string):
     
     letters, special_line = ascii_to_grid(string)
 
-
-
     if 'ROTATE' in special_line:
         rotater_code = special_line.split('ROTATE')[1].strip()
         code.append('// Rotating')
@@ -115,7 +113,5 @@ def process_ascii_art(string):
 
     return '\n'.join(declarations + code)
 
-
-if __name__ == "__main__":
-    source = open(sys.argv[1]).read()
-    print(sub_between(source, 'PATTERN', ';', process_ascii_art))
+def convert(source):
+    return sub_between(source, 'PATTERN', ';', process_ascii_art)
