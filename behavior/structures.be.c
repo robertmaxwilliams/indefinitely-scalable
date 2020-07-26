@@ -1,12 +1,12 @@
 
 // helper for update_rememberer
 void remember_and_place(cell_t* cell, unsigned char i, cell_t* neigh, cell_t* maybe_res) {
-    if (neigh->type == REM) {
+    if (neigh->type == REMEMBERER) {
         cell->data[i%10] = 1;
     } else if (maybe_res->type == RES && cell->data[i%10] == 1) {
         swap_cells(neigh, maybe_res);
         clear_cell(neigh);
-        neigh->type = REM;
+        neigh->type = REMEMBERER;
     }
 }
 

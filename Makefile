@@ -2,12 +2,13 @@
 C_FLAGS=-O3 -std=c99 -Wextra -pedantic-errors -fdiagnostics-color=always 
 C_SOURCE=build/graphics.c build/behave.out.c build/main.c
 SDL2_FILES = /usr/lib/x86_64-linux-gnu/libSDL2.a /usr/lib/x86_64-linux-gnu/libSDL2_image.a /usr/lib/x86_64-linux-gnu/libSDL2main.a /usr/lib/x86_64-linux-gnu/libSDL2_test.a /usr/lib/x86_64-linux-gnu/libSDL2_ttf.a
+BEHAVIOR = behavior/main-cells.be.c behavior/generic.be.c behavior/structures.be.c behavior/string-manipulators.be.c
 
 CC_SDL=`sdl2-config --cflags --libs`
 all: build/makeheaders
 	mkdir -p build/
 	# run out python preprocessor and colortable maker
-	python3 behave_preoprocessor.py  src/behave.c behavior/main-cells.be.c behavior/generic.be.c > build/behave.out.c
+	python3 behave_preoprocessor.py  src/behave.c  $(BEHAVIOR) > build/behave.out.c
 	python3 color-tabler.py > build/data_colors.h
 	# copy all the files we need to the staging directory
 	cp src/graphics.c build/

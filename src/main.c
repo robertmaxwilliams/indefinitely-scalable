@@ -109,7 +109,7 @@ void scan_for_strings(world_t world) {
 
 void set_cell(world_t world, int x, int y) {
     if (x >= WORLD_SIZE || y >= WORLD_SIZE || x < 0 || y < 0) {
-        printf("tried to place outside of bounds\n");
+        //printf("tried to place outside of bounds\n");
         return;
     }
     world[x][y]->type = placer_index;
@@ -118,7 +118,7 @@ void set_cell(world_t world, int x, int y) {
 
 cell_t* get_cell(world_t world, int x, int y) {
     if (x >= WORLD_SIZE || y >= WORLD_SIZE || x < 0 || y < 0) {
-        printf("tried to place outside of bounds\n");
+        //printf("tried to place outside of bounds\n");
         return hole;
     }
     return world[x][y];
@@ -143,9 +143,13 @@ void gamma_ray(world_t world) {
 }
 
 void print_cell(cell_t* cell) {
-    printf("type: %3d, data = [", cell->type);
+    printf("type: %s (%d), \n\tdata = [", cell_names[cell->type], cell->type);
     iter (i, 10) {
-        printf("%3d, ", cell->data[i]);
+        unsigned char c = cell->data[i];
+        if (c >= 32 && c <= 126)
+            printf("%03d(%c),", c, c);
+        else
+            printf("%03d,   ", c);
     }
     printf("]\n");
 }
@@ -166,6 +170,7 @@ int poll_events(int* sps, world_t world) {
             // click on menu  bar
             if (x >= WORLD_SIZE) {
                 placer_index = click_sidebar(event.button.x, event.button.y);
+                printf("selected type: %s\n", cell_names[placer_index]);
                 continue;
             }
 

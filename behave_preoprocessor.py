@@ -86,6 +86,7 @@ This file has the following tags:
 which will be replaced with code generated based on the the cell be.c files
 '''
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Combine your .be.c files with behave.c.')
     parser.add_argument('behave', metavar='B', type=str, 
@@ -137,6 +138,10 @@ if __name__ == "__main__":
     # other parts of the program depend on these
     assert names[0] == 'BLANK'
     assert names[1] == 'STRING'
+
+    # names have to be less than 50 characters
+    for name in names:
+        assert len(name) < 50
 
     enum_string = 'enum CELL_TYPES {' \
             + ', '.join([n if i>1 else n+f'={i}' for i, n in enumerate(names)]) + '};\n'
