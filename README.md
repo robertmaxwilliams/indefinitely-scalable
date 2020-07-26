@@ -22,13 +22,16 @@ If you're on windows, go to the bottom of the readme and follow those intruction
 The user interface makes use of both the graphical window and the text terminal to provide the best
 experience with minimal tooling.
 
-Left click to draw the active element, click on the right sidebar to choose the active element.
+Left click to draw, click on the right sidebar to choose the active element. The name of that
+element is printed out.
+
 Middle click to draw a big box of the same element.
+
+Right click to have cell information printed out in the terminal
 
 Each cell is drawn with the outside color being its type and the inside color one of its data
 elements.
 
-(NOT DONE) right click to have cell information printed out in the terminal
 
 Keyboard shortcuts:
 - (number 0-9): selects on of the first 10 elements as active
