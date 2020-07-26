@@ -7,12 +7,12 @@ CC_SDL=`sdl2-config --cflags --libs`
 all: build/makeheaders
 	mkdir -p build/
 	# run out python preprocessor and colortable maker
-	python3 behave_preoprocessor.py  behave.c main-cells.be.c generic.be.c > build/behave.out.c
+	python3 behave_preoprocessor.py  src/behave.c behavior/main-cells.be.c behavior/generic.be.c > build/behave.out.c
 	python3 color-tabler.py > build/data_colors.h
 	# copy all the files we need to the staging directory
-	cp graphics.c build/
-	cp main.c build/
-	cp constants.h build/
+	cp src/graphics.c build/
+	cp src/main.c build/
+	cp src/constants.h build/
 	# make headers 
 	./build/makeheaders build/behave.out.c
 	./build/makeheaders build/graphics.c
@@ -21,7 +21,7 @@ all: build/makeheaders
 
 test:
 	curl http://eeweb.poly.edu/~yao/EL5123/image/lena_gray.bmp > build/lena.bmp
-	gcc test.c $(C_FLAGS) $(CC_SDL) -o build/test
+	gcc src/test.c $(C_FLAGS) $(CC_SDL) -o build/test
 
 windows-prep:
 	mkdir -p build/
