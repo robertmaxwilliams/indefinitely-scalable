@@ -13,6 +13,7 @@
 #include "graphics.h"
 #include "data_colors.h"
 
+// these are baked into the preprocessor so don't change them
 #define BLANK_CELL_TYPE 0
 #define STRING_CELL_TYPE 1
 
