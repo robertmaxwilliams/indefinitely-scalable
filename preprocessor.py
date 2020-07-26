@@ -4,7 +4,7 @@ import argparse
 import random
 
 import ascii_art
-# This preprocessor takes multiple behavior files (with .be.c extension)
+# This preprocessor takes behave.c and multiple element behavior files 
 # and prints out a single c file that combines them and creates color and enums:
 
 '''
@@ -57,7 +57,8 @@ update_function_type update_functions[256] = {
 };
 '''
 
-# to define a new cell type, make a file `whatever.be.c` and define its behavior:
+# to define a new cell type, use the #CELL tag and put this in the elements directory
+# and add it to the Makefile
 '''
 #CELL WHATEVER 0xff00ff
 void update_whatver(cell_t* cell) {
@@ -83,17 +84,17 @@ This file has the following tags:
         #CELL_COLORS
         #CELL_NAMES
         #UPDATE_FUNCTIONS
-which will be replaced with code generated based on the the cell be.c files
+which will be replaced with code generated based on the the element behavior files
 '''
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Combine your .be.c files with behave.c.')
+    parser = argparse.ArgumentParser(description='Combine your element files with behave.c.')
     parser.add_argument('behave', metavar='B', type=str, 
             help=behave_help_string)
 
     parser.add_argument('cellfiles', action='append', nargs='+',
-            help='Your .be.c files with #CELL (name) (color) tags.')
+            help='Your element files with #CELL (name) (color) tags.')
 
     args = parser.parse_args()
 
