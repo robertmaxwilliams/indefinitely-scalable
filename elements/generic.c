@@ -1,7 +1,11 @@
+/*
+ * Called generic because they will function independently of whatever it is 
+ * they're operating on.
+ */
 
 // makes blank copies of whateber type it sees first
 // data is {target}
-#CELL MAKER 0xD4AC0D, // maker, dark yellow
+#ELEMENT MAKER 0xD4AC0D, // maker, dark yellow
 void update_something_maker(cell_t* cell) {
     if (cell->data[0] == 0) {
         PATTERN
@@ -25,7 +29,7 @@ void update_something_maker(cell_t* cell) {
     }
 }
 
-#CELL SHORT_LIVED 0xE5E7E9 // short lived, almost white
+#ELEMENT SHORT_LIVED 0xE5E7E9 // short lived, almost white
 void update_short_lived(cell_t* cell) {
     if (randp(2)) {
         cell->data[0] += 1;
@@ -41,7 +45,7 @@ void update_short_lived(cell_t* cell) {
 
 // data is {id, string index, character}
 // change a string to this type to make it fall.
-#CELL FALLER 0x4A235A // faller, dark purple
+#ELEMENT FALLER 0x4A235A // faller, dark purple
 void update_faller(cell_t* cell) {
     PATTERN
         |  .
@@ -55,7 +59,7 @@ void update_faller(cell_t* cell) {
     }
 }
 
-#CELL RISER 0x5DADE2 // riser, blue
+#ELEMENT RISER 0x5DADE2 // riser, blue
 void update_riser(cell_t* cell) {
     PATTERN
         | aba
@@ -70,7 +74,7 @@ void update_riser(cell_t* cell) {
 }
 
 // data is {confidence}
-#CELL DOWN_DROPPER 0x154360 // down dropper, dark navy
+#ELEMENT DOWN_DROPPER 0x154360 // down dropper, dark navy
 void update_downdropper(cell_t* cell) {
 
     if (randp(2)) {
@@ -110,7 +114,7 @@ void update_downdropper(cell_t* cell) {
 
 
 // data is {tracker, stored index, stored character}
-#CELL ISOLATOR 0x95A5A6 // isolater grey
+#ELEMENT ISOLATOR 0x95A5A6 // isolater grey
 void update_isolater(cell_t* cell) {
     if (randp(6)) {
         diffuse(cell, 1);

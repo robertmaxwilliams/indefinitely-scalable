@@ -1,6 +1,10 @@
+/*
+ * String manipulation operators, I'd like to have more
+ * of these.
+ */
 // data is {tracker, stored index, stored character, new string tracker}
 //           0         1               2               3             
-#CELL STRING_COPIER 0x9B59B6 // string copier, purple
+#ELEMENT STRING_COPIER 0x9B59B6 // string copier, purple
 void update_string_copier(cell_t* cell) {
     PATTERN
         |   a
@@ -30,7 +34,7 @@ void update_string_copier(cell_t* cell) {
 // imprint2 is made into down_dropper
 // imprint1 is made into up_riser or whatever
 // deather is incremented when we don't see a string and reset when we do
-#CELL STRING_SPLITTER 0xE74C3C // strings splitter, bright red
+#ELEMENT STRING_SPLITTER 0xE74C3C // strings splitter, bright red
 void update_strings_splitter(cell_t* cell) {
     PATTERN
         |  a

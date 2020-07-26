@@ -17,6 +17,15 @@ those it's hard to call it a computer.
 
 If you're on windows, go to the bottom of the readme and follow those intructions carefully.
 
+# Terminology
+
+Each square on the grid is a "cell" (or sometimes "atom") and each cell has a type, which is one of
+the "elements". What element a cell is determines its behavior - how it acts, if it moves, what
+other cells will do to it. Cells also have data, which nearby cells can read or edit and which is
+the only state a cell preserves between updates. The update function is called on one cell every
+step, and with enough steps this gives the impression of a constantly evolving world, but no two
+nearby cells are ever actually updated at the same time, like in Conway's Game of Life.
+
 # User interface
 
 The user interface makes use of both the graphical window and the text terminal to provide the best
@@ -62,18 +71,23 @@ Because I'm lazy, the build process is a bit convoluted. Thankfully
 it's all run by a makefile so hopefully you don't have to worry about
 that.
 
-`behave.c` keeps all the atom types and behaviors.
+`src/behave.c` defines helpers for all the atom types (aka elements) and the update functions.
 
-`behave.c` is preprocessed by `prepro.py` to make `behave.out.c`
+`elements/` contains code for each of the elements and #CELL tags for their names and colors.
+
+`behave.c` and the `.c` files in `elements/` are preprocessed by `preprocessor.py` to make
+`build/behave.out.c`
 
 `color-tabler.py` is used to make `data_colors.h`, which is just a constant
 array used for graphics.
 
-`constants.h` keeps all the struct types and global #defines and such that
+`src/constants.h` keeps all the struct types and global #defines and such that
 need tweaking. The sizes of everything is mostly kept in here.
 
-Once all that is in place, `makeheaders` makes a header for `graphics.c` and
-`behave.out.c`
+`main.c`, `constants.h` and `graphics.c` are copied from `src/` to `build/`
+
+Once all that is in place, `makeheaders` makes a header for `build/graphics.c` and
+`build/behave.out.c`
 
 Then `main.c`, `graphics.c`, and `behave.out.c` are all compiled to make
 the program, `main`.
@@ -82,22 +96,39 @@ TODO draw a flowchart
 
 # Modifying/adding new elements
 
-TODO make another preprocessor to make this process easier
+The elements are all kept in C files in 'elements/', you can edit these files or
+make your own but be careful editing `main-cells.c` because `BLANK` and `STRING` have to be first
+and second, respectively.
 
-This is all done in `behave.c`.
+Also, keep `behave.c` open, since you have access to all of its helper functions.
 
-First, write an update function. Its name should start with
-`update_` and then name whatever element you're making.
+Now define your new element using a #CELL tag on its own line and by defining a function on the very
+next line:
 
-Then, add that function's name to the `update_functions` array, near
-the bottom of the file. Then, add its name in all  caps to the enum `CELL_TYPES`.
-Finally, find a color for it (I've been getting mine from 
-[htmlcolorcodes.com](https://htmlcolorcodes.com/)) and add is to `CELL_COLORS`.
+```
+#ELEMENT SOME_NAME
+void doesnt_matter_what_you_name_it(cell_t* cell) {
+    // your code goes here
+}
+```
 
-It's very important these 3 arrays (well, one is an enum, but it looks array-like)
-have all of their elements in sync, otherwise
-the names, colors, and update functions of the atoms could get mixed up. Just always 
-add to the end of the arrays and you'll be fine.
+You can also put a color after the name (I got mine from
+[htmlcolorcodes.com](https://htmlcolorcodes.com/)) like this:
+
+```
+#ELEMENT SOME_NAME 0xD4AC0D
+```
+
+otherwise a color will be choosen randomly for you.
+
+Also, you can define new helper functions in `behave.c` or in the elements' source files, they all
+get combined together so it doesn't make a big difference.
+
+If you make a new `.c` file in elements, you'll have to add it to the makefile, to the variable
+called `ELEMENTS`. Again, it's important that `main-cells.c` comes first, and the order everything
+is in will determine what order they'll show up in the right sidebar. Also, if the sidebar is full
+you won't be able to click on your element. Fix this by increasing `NUM_SIDEBAR_COLUMNS` in
+`src/constants.c`
 
 ## The ascii art thing (PATTERN)
 

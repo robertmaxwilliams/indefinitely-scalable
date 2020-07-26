@@ -1,3 +1,6 @@
+/*
+ * Physical structures, like boxes and walls.
+ */
 
 // helper for update_rememberer
 void remember_and_place(cell_t* cell, unsigned char i, cell_t* neigh, cell_t* maybe_res) {
@@ -12,7 +15,7 @@ void remember_and_place(cell_t* cell, unsigned char i, cell_t* neigh, cell_t* ma
 
 // stores whether there is someone at various relative positions, 
 // in the following way: {top, topright, right, rightbuttom, bottom, bl, left, lt, empty, rot}
-#CELL REMEMBERER 0x641E16 // rememberer burnt red
+#ELEMENT REMEMBERER 0x641E16 // rememberer burnt red
 void update_rememberer(cell_t* cell) {
     cell->data[9] = rand() % 4;
     unsigned char rot = cell->data[9];
@@ -33,7 +36,7 @@ void update_rememberer(cell_t* cell) {
 }
 
 // stores: {n steps, rot}
-#CELL BOX 0x145A32 // box, dark green
+#ELEMENT BOX 0x145A32 // box, dark green
 void update_box(cell_t* cell) {
     unsigned char rot = cell->data[1];
     unsigned char steps = cell->data[0];

@@ -48,7 +48,7 @@ void draw_world(world_t world) {
         iter(y, WORLD_SIZE) {
             unsigned char t = world[x][y]->type;
             unsigned char d = world[x][y]->data[data_select];
-            unsigned int color1 = rgb_to_bgra(cell_colors[t]);
+            unsigned int color1 = rgb_to_bgra(element_colors[t]);
             unsigned int color2 = t == BLANK_CELL_TYPE ? color1 : rgb_to_bgra(data_colors[d]);
             draw(x, y, color1, color2);
         }
@@ -57,7 +57,7 @@ void draw_world(world_t world) {
     // draw menu bar
     iter(column, NUM_SIDEBAR_COLUMNS) {
         iter(row, NUM_SIDEBAR_ROWS) {
-            unsigned int color1 = rgb_to_bgra(cell_colors[row+ column*NUM_SIDEBAR_ROWS]);
+            unsigned int color1 = rgb_to_bgra(element_colors[row+ column*NUM_SIDEBAR_ROWS]);
             unsigned int color2 = (row+column*NUM_SIDEBAR_ROWS) == placer_index ? 0xffffff00 : 0;
             draw_sidebar(row, column, color1, color2);
         }
@@ -143,7 +143,7 @@ void gamma_ray(world_t world) {
 }
 
 void print_cell(cell_t* cell) {
-    printf("type: %s (%d), \n\tdata = [", cell_names[cell->type], cell->type);
+    printf("type: %s (%d), \n\tdata = [", element_names[cell->type], cell->type);
     iter (i, 10) {
         unsigned char c = cell->data[i];
         if (c >= 32 && c <= 126)
@@ -170,7 +170,7 @@ int poll_events(int* sps, world_t world) {
             // click on menu  bar
             if (x >= WORLD_SIZE) {
                 placer_index = click_sidebar(event.button.x, event.button.y);
-                printf("selected type: %s\n", cell_names[placer_index]);
+                printf("selected type: %s\n", element_names[placer_index]);
                 continue;
             }
 

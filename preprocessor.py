@@ -12,7 +12,7 @@ import ascii_art
 enum CELL_TYPES {BLANK=0, STRING=1, ISOLATER, DREG, RES, WALL, REM, MAKER, BOX, STRING_COPIER, 
     DOWN_DROPPER, SHORT_LIVED, FALLER, STRINGS_SPLITTER, RISER}; 
 
-unsigned int cell_colors[256] = {
+unsigned int element_colors[256] = {
     0xA9CCE3, // blank/background 0 sky blue
     0x5D6D7E, // 1 string steel
     0x95A5A6, // 2  string isolater grey
@@ -30,7 +30,7 @@ unsigned int cell_colors[256] = {
     0x5DADE2, // 14 riser, blue
 };
 
-char cell_names[265][51] = {"BLANK", "STRING", ISOLATER", "DREG"...};
+char element_names[265][51] = {"BLANK", "STRING", ISOLATER", "DREG"...};
 
 '''
 
@@ -57,15 +57,15 @@ update_function_type update_functions[256] = {
 };
 '''
 
-# to define a new cell type, use the #CELL tag and put this in the elements directory
+# to define a new element type, use the #CELL tag and put this in the elements directory
 # and add it to the Makefile
 '''
-#CELL WHATEVER 0xff00ff
+#ELEMENT WHATEVER 0xff00ff
 void update_whatver(cell_t* cell) {
     // do some stuff
 }
 '''
-# It's important that the #CELL line is right before the function definition and that the only
+# It's important that the #ELEMENT line is right before the function definition and that the only
 # thing before the name of the functions is "void" and an open parenthesis comes after it.
 # If the color is ommitted, a random one based on the hash of the uppercase name will be used.
 def name_to_color(name):
@@ -80,9 +80,9 @@ def multi_replace(string, orig_new_pairs):
 behave_help_string = \
 '''
 This file has the following tags:
-        #CELL_ENUM
-        #CELL_COLORS
-        #CELL_NAMES
+        #ELEMENT_ENUM
+        #ELEMENT_COLORS
+        #ELEMENT_NAMES
         #UPDATE_FUNCTIONS
 which will be replaced with code generated based on the the element behavior files
 '''
@@ -93,39 +93,39 @@ if __name__ == "__main__":
     parser.add_argument('behave', metavar='B', type=str, 
             help=behave_help_string)
 
-    parser.add_argument('cellfiles', action='append', nargs='+',
-            help='Your element files with #CELL (name) (color) tags.')
+    parser.add_argument('elementfiles', action='append', nargs='+',
+            help='Your element files with #ELEMENT (name) (color) tags.')
 
     args = parser.parse_args()
 
     behave_main = open(args.behave).read()
     lines = []
-    for filename in args.cellfiles[0]:
+    for filename in args.elementfiles[0]:
         lines += open(filename).readlines() 
 
     names = []
     colors = []
     funs = []
-    last_line_was_cell = False
+    last_line_was_element = False
     keeper_lines = []
     for line in lines:
-        if not line.startswith('#CELL'):
+        if not line.startswith('#ELEMENT'):
             keeper_lines.append(line)
-        if line.startswith('#CELL'):
+        if line.startswith('#ELEMENT'):
             # match the name and optionall the color hex
-            cell_search = re.search(r'#CELL\s+(\w*)\s+(0x[0-9A-Fa-f]{6})?.*', line)
-            if cell_search:
-                last_line_was_cell = True
-                name = cell_search.group(1)
+            element_search = re.search(r'#ELEMENT\s+(\w*)\s+(0x[0-9A-Fa-f]{6})?.*', line)
+            if element_search:
+                last_line_was_element = True
+                name = element_search.group(1)
                 names.append(name)
-                maybe_color = cell_search.group(2)
+                maybe_color = element_search.group(2)
                 if maybe_color == None:
                     colors.append(name_to_color(name))
                 else:
                     colors.append(maybe_color)
-        elif last_line_was_cell:
+        elif last_line_was_element:
             # match the name of the functions
-            last_line_was_cell = False
+            last_line_was_element = False
             fun_search = re.search(r'void\s*(\w*)\s*\(', line)
             if fun_search:
                 fun_name = fun_search.group(1)
@@ -146,15 +146,15 @@ if __name__ == "__main__":
 
     enum_string = 'enum CELL_TYPES {' \
             + ', '.join([n if i>1 else n+f'={i}' for i, n in enumerate(names)]) + '};\n'
-    colors_string = 'unsigned int cell_colors[256] = {' + ', '.join(colors) + '};\n'
-    names_string = 'char cell_names[265][51] = {' \
+    colors_string = 'unsigned int element_colors[256] = {' + ', '.join(colors) + '};\n'
+    names_string = 'char element_names[265][51] = {' \
             + ', '.join(['"'+n+'"' for n in names]) + '};\n'
     funs_string = 'update_function_type update_functions[256] = {' + ', '.join(funs) + '};\n'
 
     function_definitions = '\n' + ''.join(keeper_lines) + '\n'
 
-    behave_main = multi_replace(behave_main, [('#CELL_ENUM', enum_string),
-        ('#CELL_COLORS', colors_string), ('#CELL_NAMES', names_string),
+    behave_main = multi_replace(behave_main, [('#ELEMENT_ENUM', enum_string),
+        ('#ELEMENT_COLORS', colors_string), ('#ELEMENT_NAMES', names_string),
         ('#UPDATE_FUNCTIONS', function_definitions + funs_string)])
     behave_main = ascii_art.convert(behave_main)
     print(behave_main)

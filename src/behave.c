@@ -7,9 +7,9 @@
 extern cell_t* hole;
 
 // these tags are replaced by prepro2.py
-#CELL_ENUM
-#CELL_COLORS
-#CELL_NAMES
+#ELEMENT_ENUM
+#ELEMENT_COLORS
+#ELEMENT_NAMES
 
 // HELPER FUNC AREA
 
