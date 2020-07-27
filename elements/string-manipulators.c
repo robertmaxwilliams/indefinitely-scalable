@@ -30,6 +30,64 @@ void update_string_copier(cell_t* cell) {
     }
 }
 
+/* 
+ * Steps are:
+ *      - while you don't have an imprint, look for a string
+ *      - imprint on the string, start looking for the element with the largest pos
+ *      - once you've not seen a larger pos for a while (boredom), start
+ *          finding res and copying the string into reversed one
+ */
+// data is {imprint, destination id, max pos, current pos, str_char}
+#ELEMENT STRING_REVERSER 0xff0000
+void update_string_reverser(cell_t* cell) {
+    PATTERN
+        |  a
+        | a.a
+        |  a;
+    // unsafe cast our cell and the string to a new type with better names
+    struct {
+        char type;
+        char imprint;
+        char boredom;
+        char destination_id;
+        char max_index;
+        char saved_index;
+        char saved_character;
+        char has_one_saved;
+    } * self = (void*) cell;
+
+    struct {
+        char type;
+        char id;
+        char index;
+        char character;
+    } * string = (void*) a;
+
+    if (string->type == STRING) { 
+        if (self->imprint == 0) { // if we aren't imprinted, imprint on this string
+            self->imprint = string->id;
+            self->destination_id = randrange(1, 256);
+            self->max_index = string->index;
+        } else if (string->id == self->imprint) { //if this str is our mark...
+            if (self->boredom < 100) { // we're still looking
+                if (string->index > self->max_index) {
+                    self->max_index = string->index;
+                    self->boredom = 0;
+                } else if (randp(2)) {
+                    // TODO a more sophisticated boredome algorithm, 
+                    // based on approximate string size
+                    self->boredom += 1;
+                }
+            } else { // we're done looking and can start reversing
+                string->id = self->destination_id;
+                string->index = self->max_index - string->index;
+            }
+        }
+    }
+
+    diffuse(cell, 1);
+}
+
 // data is {imprint1, imprint2, deather}
 // imprint2 is made into down_dropper
 // imprint1 is made into up_riser or whatever
