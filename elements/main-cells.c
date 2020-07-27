@@ -24,6 +24,11 @@ void update_string(cell_t* cell) {
     diffuse(cell, 6);
 }
 
+#ELEMENT FROZEN_STRING
+void update_frozen_string(cell_t* cell) {
+    (void)cell;
+}
+
 #ELEMENT DREG 0x5D6D7E // orange color
 void update_dreg(cell_t* cell) {
     PATTERN

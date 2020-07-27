@@ -145,7 +145,7 @@ if __name__ == "__main__":
         assert len(name) < 50
 
     enum_string = 'enum CELL_TYPES {' \
-            + ', '.join([n if i>1 else n+f'={i}' for i, n in enumerate(names)]) + '};\n'
+            + ', '.join([n if i>2 else n+f'={i}' for i, n in enumerate(names)]) + '};\n'
     colors_string = 'unsigned int element_colors[256] = {' + ', '.join(colors) + '};\n'
     names_string = 'char element_names[265][51] = {' \
             + ', '.join(['"'+n+'"' for n in names]) + '};\n'

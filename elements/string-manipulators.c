@@ -10,6 +10,49 @@ typedef struct {
     char length;
 } string_t;
 
+typedef struct { 
+    char type; 
+    char id; 
+    char index; 
+    char character; 
+    char length;
+} frozen_string_t;
+
+
+typedef struct {
+    char type;
+    char imprint;
+    char cur_index;
+} string_freezer_t;
+
+#ELEMENT STRING_FREEZER
+void update_string_freezer(cell_t* cell) {
+    PATTERN
+        |  a
+        | a.a
+        |  a;
+    string_freezer_t* self = (void*) cell;
+
+    if (a->type == STRING) {
+        string_t* string = (void*) a;
+        if (self->imprint == 0) {
+            self->imprint = string->id;
+        } else if (self->imprint == string->id && string->index == self->cur_index) {
+            string->type = FROZEN_STRING;
+            self->cur_index += 1;
+            if (self->cur_index >= string->length) {
+                clear_cell(cell);
+                self->type = RES;
+            }
+            swap_cells(cell, a);
+        }
+    }
+}
+
+
+
+
+
 typedef struct {
     char type;
     char source_id;
@@ -128,6 +171,12 @@ void update_string_equal(cell_t* cell) {
  *          finding res and copying the string into reversed one
  */
 // data is {imprint, destination id, max pos, current pos, str_char}
+typedef struct {
+        char type;
+        char imprint;
+        char destination_id;
+} string_reverser_t;
+
 #ELEMENT STRING_REVERSER 0xff0000
 void update_string_reverser(cell_t* cell) {
     PATTERN
@@ -135,42 +184,58 @@ void update_string_reverser(cell_t* cell) {
         | a.a
         |  a;
     // unsafe cast our cell and the string to a new type with better names
-    struct {
-        char type;
-        char imprint;
-        char boredom;
-        char destination_id;
-        char max_index;
-        char saved_index;
-        char saved_character;
-        char has_one_saved;
-    } * self = (void*) cell;
+    string_reverser_t* self = (void*) cell;
 
-    struct { char type; char id; char index; char character; } * string = (void*) a;
 
-    if (string->type == STRING) { 
-        if (self->imprint == 0) { // if we aren't imprinted, imprint on this string
+    if (a->type == STRING) { 
+        string_t * string = (void*) a;
+        if (self->imprint == 0) {
             self->imprint = string->id;
             self->destination_id = randrange(1, 256);
-            self->max_index = string->index;
-        } else if (string->id == self->imprint) { //if this str is our mark...
-            if (self->boredom < 100) { // we're still looking
-                if (string->index > self->max_index) {
-                    self->max_index = string->index;
-                    self->boredom = 0;
-                } else if (randp(2)) {
-                    // TODO a more sophisticated boredome algorithm, 
-                    // based on approximate string size
-                    self->boredom += 1;
-                }
-            } else { // we're done looking and can start reversing
-                string->id = self->destination_id;
-                string->index = self->max_index - string->index;
+        } else if (string->id == self->imprint) {
+            string->id = self->destination_id;
+            string->index = string->length - string->index - 1;
             }
-        }
     }
-
     diffuse(cell, 1);
+}
+
+typedef struct {
+        char type;
+        char imprint;
+        char destination_id;
+        char cur_index;
+} frozen_string_reverser_t;
+
+#ELEMENT FROZEN_STRING_REVERSER
+void update_frozen_string_reverser(cell_t* cell) {
+    PATTERN
+        |  a
+        | a.a
+        |  a;
+    // unsafe cast our cell and the string to a new type with better names
+    frozen_string_reverser_t* self = (void*) cell;
+
+
+    if (a->type == FROZEN_STRING) { 
+        string_t * string = (void*) a;
+        if (self->imprint == 0) {
+            self->imprint = string->id;
+            self->destination_id = randrange(1, 256);
+        } else if (string->id == self->imprint && string->index == self->cur_index) {
+            string->id = self->destination_id;
+            string->index = string->length - string->index - 1;
+            self->cur_index += 1;
+            if (self->cur_index >= string->length) {
+                clear_cell(cell);
+                cell->type = RES;
+            }
+            swap_cells(a, cell);
+            }
+    }
+    if (self->imprint == 0) {
+        diffuse(cell, 1);
+    }
 }
 
 // data is {imprint1, imprint2, deather}
@@ -210,4 +275,5 @@ void update_strings_splitter(cell_t* cell) {
     }
     diffuse(cell, 3);
 }
+
 

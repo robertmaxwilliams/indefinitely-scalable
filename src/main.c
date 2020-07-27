@@ -16,6 +16,7 @@
 // these are baked into the preprocessor so don't change them
 #define BLANK_CELL_TYPE 0
 #define STRING_CELL_TYPE 1
+#define FROZEN_STRING_CELL_TYPE 2
 
 // start out at about 60 AER
 int sps = (WORLD_SIZE * WORLD_SIZE * 60) / 60;
@@ -80,7 +81,7 @@ void scan_for_strings(world_t world) {
     iter(x, WORLD_SIZE) { 
         iter(y, WORLD_SIZE) {
             cell_t* cell = world[x][y];
-            if (cell->type == STRING_CELL_TYPE) {
+            if (cell->type == STRING_CELL_TYPE || cell->type == FROZEN_STRING_CELL_TYPE) {
                 unsigned char id = cell->data[0];
                 unsigned char string_index = cell->data[1];
                 unsigned char c = cell->data[2];
