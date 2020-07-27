@@ -2,33 +2,123 @@
  * String manipulation operators, I'd like to have more
  * of these.
  */
-// data is {tracker, stored index, stored character, new string tracker}
-//           0         1               2               3             
+typedef struct { 
+    char type; 
+    char id; 
+    char index; 
+    char character; 
+    char length;
+} string_t;
+
+typedef struct {
+    char type;
+    char source_id;
+    char stored_index;
+    char stored_character;
+    char stored_length;
+    char target_id;
+    char count;
+    char has_one_stored;
+} string_copier_t;
 #ELEMENT STRING_COPIER 0x9B59B6 // string copier, purple
 void update_string_copier(cell_t* cell) {
     PATTERN
-        |   a
-        |  aaa
-        |   .  
-        |  xxx
-        |   x;
-    // on creation, imprint self with a random id
-    if (cell->data[3] == 0) {
-        cell->data[3] = randrange(1, 256);
-    }
+        |  a
+        | a.a  
+        |  a;
+
+    string_copier_t* self = (void*) cell;
 
     if (a->type == STRING) {
-        // copy a string into self but use our ID
-        memcpy(cell->data, a->data, 3);
-        cell->data[0] = cell->data[3];
-    } else if (a->type == RES && cell->data[0] != 0 && is_empty(x)) {
+        string_t* string = (void*) a;
+        if (self->source_id == 0) {
+            self->source_id = string->id;
+            self->target_id = randrange(1, 256);
+        } else if (string->id == self->source_id && string->index == self->count) {
+            // copy a string into self but use our ID
+            self->stored_index = string->index;
+            self->stored_character = string->character;
+            self->stored_length = string->length;
+            self->has_one_stored = 1;
+        }
+    } else if (a->type == RES && self->has_one_stored) {
         // use res to build the string if we have one inside then delete our copy
         clear_cell(a);
-        memcpy(x->data, cell->data, 3);
-        x->type = STRING;
-        cell->data[0] = 0;
+        a->type = STRING;
+        string_t* string = (void*) a;
+        string->id = self->target_id;
+        string->index = self->stored_index;
+        string->character = self->stored_character;
+        string->length = self->stored_length;
+        self->count += 1;
+        self->has_one_stored = 0;
+        if (self->count >= self->stored_length) {
+            clear_cell(cell);
+            cell->type = RES;
+        }
     }
+    diffuse(cell, 1);
 }
+
+typedef struct { 
+    char type;
+    char imprint1;
+    char imprint2;
+    char cur_index;
+    char found1;
+    char character1;
+} string_equal_t;
+
+#ELEMENT STRING_EQUAL
+void update_string_equal(cell_t* cell) {
+    PATTERN
+        |   a
+        |  a.a
+        |   a;
+
+    // void case cell to "self" with named fields
+    string_equal_t* self = (void*) cell;
+
+    if (a->type == STRING) {
+        string_t* string = (void*) a;
+        if (self->imprint1 == 0) {
+            self->imprint1 = string->id;
+        } else if (self->imprint2 == 0) {
+            if (string->id != self->imprint1) {
+                self->imprint2 = string->id;
+            }
+        } else {
+            if (!self->found1 && string->id == self->imprint1 && string->index == self->cur_index) {
+                self->character1 = string->character;
+                self->found1 = 1;
+            } else if (self->found1 && string->id == self->imprint2 && string->index == self->cur_index) {
+                if (self->character1 == string->character) {
+                    self->cur_index += 1;
+                    self->found1 = 0;
+                    if (self->cur_index == string->length) {
+                        cell->type = STRING;
+                        cell->data[0] = randrange(1, 256);
+                        cell->data[1] = 0;
+                        cell->data[2] = 'y';
+                        cell->data[3] = 1;
+                    }
+                } else {
+                    printf("failed at %d, %c(%d) != %c(%d)\n", self->cur_index, self->character1, 
+                            self->character1, string->character, string->character);
+                    cell->type = STRING;
+                    cell->data[0] = randrange(1, 256);
+                    cell->data[1] = 0;
+                    cell->data[2] = 'n';
+                    cell->data[3] = 1;
+                }
+            }
+        }
+    }
+    diffuse(cell, 2);
+}
+
+
+
 
 /* 
  * Steps are:
@@ -56,12 +146,7 @@ void update_string_reverser(cell_t* cell) {
         char has_one_saved;
     } * self = (void*) cell;
 
-    struct {
-        char type;
-        char id;
-        char index;
-        char character;
-    } * string = (void*) a;
+    struct { char type; char id; char index; char character; } * string = (void*) a;
 
     if (string->type == STRING) { 
         if (self->imprint == 0) { // if we aren't imprinted, imprint on this string

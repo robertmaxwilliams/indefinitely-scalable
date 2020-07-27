@@ -303,6 +303,7 @@ int poll_events(int* sps, world_t world) {
 void print_in_buff_to_world(world_t world) {
     unsigned char id = (rand() % 255) + 1;
     int x = 0;
+    int length = strlen(in_buff);
     for (int i = 0; i < IN_SIZE; i++) {
         if (in_buff[i] == '\0')
             return;
@@ -323,6 +324,7 @@ void print_in_buff_to_world(world_t world) {
         cell->data[0] = id;
         cell->data[1] = i;
         cell->data[2] = in_buff[i];
+        cell->data[3] = length;
     }
 }
 

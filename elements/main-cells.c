@@ -18,7 +18,7 @@ void update_blank(cell_t* cell) {
     (void)(cell);
 }
 
-// data is {id, string index, character}
+// data is {id, string index, character, length}
 #ELEMENT STRING 0x95A5A6  // grey color
 void update_string(cell_t* cell) {
     diffuse(cell, 6);
