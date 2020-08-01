@@ -29,7 +29,7 @@ void update_frozen_string(cell_t* cell) {
     (void)cell;
 }
 
-#ELEMENT DREG 0x5D6D7E // orange color
+#ELEMENT DREG 0xD35400 // orange color
 void update_dreg(cell_t* cell) {
     PATTERN
         |   a
@@ -37,6 +37,8 @@ void update_dreg(cell_t* cell) {
         | aa.aa
         |  aaa
         |   a;
+    if (a == hole)
+        return;
 
     switch (a->type) {
         case BLANK:

@@ -274,6 +274,7 @@ int poll_events(int* sps, world_t world) {
                     }
                     break;
                 case SDLK_h: // scan all cells for strings
+                    print_cell(hole);
                     scan_for_strings(world);
                     break;
                 case SDLK_j: // scan all cells for strings

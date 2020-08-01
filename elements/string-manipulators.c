@@ -21,6 +21,111 @@ typedef struct {
 
 typedef struct {
     char type;
+    char orientation;
+    char id;
+    char is_working;
+    char index;
+} cell_to_string_t;
+
+#ELEMENT CELL_TO_STRING
+void update_cell_to_string(cell_t* cell) {
+    cell_to_string_t* self = (void*) cell;
+    PATTERN ROTATE self->orientation
+        |   r
+        |  rrr
+        | rr.ar
+        |  rrr
+        |   r;
+    if (r->type == RES) {
+        if (!self->is_working && a->type != BLANK && a->type != RES && a->type != DREG
+                && a->type != STRING && a->type != WALL) {
+            self->is_working = 1;
+            self->id = randrange(1, 256);
+            r->type = STRING;
+            string_t* string = (void*) r;
+            string->length = 11;
+            string->id = self->id;
+
+            string->character = a->type;
+            a->type = WALL;
+
+            string->index = 0;
+            self->index = 1;
+        } else if (self->is_working) {
+            r->type = STRING;
+            string_t* string = (void*) r;
+            string->length = 11;
+            string->id = self->id;
+            string->character = a->data[(self->index - 1)%10];
+            string->index = self->index;
+            self->index += 1;
+            if (self->index >= 11) {
+                clear_cell(cell);
+                cell->type = RES;
+                return;
+            }
+        }
+    }
+
+    if (!self->is_working) {
+        self->orientation = randrange(0, 4);
+        diffuse(cell, 3);
+    }
+}
+
+
+
+
+typedef struct {
+    char type;
+    char orientation;
+    char id;
+    char is_working;
+    char index;
+    char stored_type;
+    short unsigned int mask;
+} string_to_cell_t;
+
+#ELEMENT string_to_cell
+void update_string_to_cell(cell_t* cell) {
+    string_to_cell_t* self = (void*) cell;
+    PATTERN ROTATE self->orientation
+        |   s
+        |  sss
+        | ss.rs
+        |  sss
+        |   s;
+    string_t* string = (void*) s;
+    if (r->type == RES && !self->is_working && s->type == STRING && string->length == 11) {
+            self->id = string->id;
+            self->is_working = 1;
+            self->stored_type = r->type;
+            r->type = WALL;
+    } else if (self->is_working && s->type == STRING && string->id == self->id) {
+        char i = string->index;
+        r->data[i%10] = string->character;
+        self->mask |= 1 << i;
+        if (self->mask == 0x7ff) { // 0x7ff == 0b_0000_0111_1111_1111
+            r->type = self->stored_type;
+            clear_cell(cell);
+            cell->type = RES;
+        } else if (self->mask | 0xF800) {
+            clear_cell(cell);
+            cell->type = RES;
+        }
+    } else if (!self->is_working) {
+        self->orientation = randrange(0, 4);
+        diffuse(cell, 3);
+    }
+}
+
+
+
+
+
+
+typedef struct {
+    char type;
     char imprint;
     char cur_index;
 } string_freezer_t;
@@ -219,7 +324,7 @@ void update_frozen_string_reverser(cell_t* cell) {
 
     if (a->type == FROZEN_STRING) { 
         string_t * string = (void*) a;
-        if (self->imprint == 0) {
+        if (self->imprint == 0 && string->index == 0) {
             self->imprint = string->id;
             self->destination_id = randrange(1, 256);
         } else if (string->id == self->imprint && string->index == self->cur_index) {
@@ -231,12 +336,81 @@ void update_frozen_string_reverser(cell_t* cell) {
                 cell->type = RES;
             }
             swap_cells(a, cell);
-            }
+        }
     }
     if (self->imprint == 0) {
         diffuse(cell, 1);
     }
 }
+
+typedef struct {
+        char type;
+        char imprint;
+        char destination_id;
+        char cur_index;
+        char split_start_index;
+        char is_backward;
+        char stored_index;
+        char stored_length;
+} frozen_string_to_words_t;
+
+// splits strings on spaces, each space resets index counter and randomizes ID
+// Has to make two passes, forward splitting and writing lengths to ' ' chars,
+// the backwards propogating the lengths
+#ELEMENT FROZEN_STRING_TO_WORDS
+void update_frozen_string_to_words(cell_t* cell) {
+    PATTERN
+        |   a
+        |  a.a
+        |   a;
+    frozen_string_to_words_t* self = (void*) cell;
+
+    if (a->type == FROZEN_STRING) {
+        string_t * string = (void*) a;
+        if (self->imprint == 0 && string->index == 0) {
+            self->imprint = string->id;
+            self->destination_id = randrange(1, 256);
+        } else if (!self->is_backward && string->id == self->imprint && string->index == self->cur_index) {
+            char length = string->length;
+            if (string->character == ' ') {
+                string->length = self->cur_index - self->split_start_index;
+                self->split_start_index = string->index + 1;
+            }
+            self->cur_index += 1;
+
+            if (self->cur_index >= length) {
+                self->stored_index = self->cur_index - self->split_start_index - 1;
+                self->stored_length = self->cur_index - self->split_start_index;
+                self->is_backward = 1;
+                self->cur_index -= 1;
+            }
+            swap_cells(a, cell);
+        } else if (self->is_backward && string->id == self->imprint && string->index == self->cur_index) {
+            if (string->character == ' ') {
+                self->stored_index = string->length;
+                self->stored_length = string->length;
+                self->destination_id = randrange(1, 256);
+                clear_cell(a);
+                a->type = RES;
+            } else {
+                string->length = self->stored_length;
+                string->id = self->destination_id;
+                string->index = self->stored_index;
+            }
+            if (self->cur_index == 0) {
+                clear_cell(cell);
+                cell->type = RES;
+                return;
+            }
+            self->stored_index -= 1;
+            self->cur_index -= 1;
+            swap_cells(a, cell);
+        }
+    } else if (self->imprint == 0) {
+        diffuse(cell, 1);
+    }
+}
+
 
 // data is {imprint1, imprint2, deather}
 // imprint2 is made into down_dropper
@@ -260,11 +434,13 @@ void update_strings_splitter(cell_t* cell) {
             if (string_id != cell->data[0])
                 cell->data[1] = string_id;
         } else {
-            cell->data[2] = 0; // reset death clock
-            if (string_id == cell->data[1])
+            if (string_id == cell->data[1]) {
+                cell->data[2] = 0; // reset death clock
                 a->type = FALLER;
-            else if (string_id == cell->data[0])
+            } else if (string_id == cell->data[0]) {
+                cell->data[2] = 0; // reset death clock
                 a->type = RISER;
+            }
         }
     } else if (a->type == RES) {
         if (randp(5)) cell->data[2] = inc(cell->data[2]);
@@ -275,5 +451,4 @@ void update_strings_splitter(cell_t* cell) {
     }
     diffuse(cell, 3);
 }
-
 

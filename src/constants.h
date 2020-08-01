@@ -1,11 +1,14 @@
 #ifndef CONSTANTS_HEADER_H 
 #define CONSTANTS_HEADER_H
 
+// erebody needs these bad boys
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
 
-#define WORLD_SIZE 20
-#define SCALE 32
+#define WORLD_SIZE 30
+#define SCALE 16
 #define BORDER  (SCALE/4)
-#define SIDEBAR  50
+#define SIDEBAR  30
 #define NUM_SIDEBAR_COLUMNS 5
 #define WINDOW_HEIGHT (WORLD_SIZE * SCALE)
 #define NUM_SIDEBAR_ROWS (WINDOW_HEIGHT / SIDEBAR)

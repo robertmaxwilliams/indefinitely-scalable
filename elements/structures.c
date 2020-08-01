@@ -35,17 +35,20 @@ void update_rememberer(cell_t* cell) {
     remember_and_place(cell, rot*2+1, b, maybe_res);
 }
 
-// stores: {n steps, rot}
+// stores: {n steps, rot, size}
 #ELEMENT BOX 0x145A32 // box, dark green
 void update_box(cell_t* cell) {
     unsigned char rot = cell->data[1];
     unsigned char steps = cell->data[0];
+    if (cell->data[2] == 0)
+        cell->data[2] = 12;
+    char size = cell->data[2];
 
     PATTERN ROTATE rot
         |  rrr
         |  b.a
         |  rrr;
-    if (steps >= 10) {
+    if (steps >= size) {
         // programmed death if in an unspecified state
         clear_cell(cell);
         cell->data[0] = 126; // mark for debugging
@@ -57,7 +60,7 @@ void update_box(cell_t* cell) {
         if (is_empty(a)) {
             r->type = BLANK;
             a->type = BOX;
-            if (steps == 9) {
+            if (steps == size-1) {
                 a->data[0] = 0;
                 a->data[1] = (rot + 1) % 4;
             } else {
@@ -123,24 +126,32 @@ void update_thick_box(cell_t* cell) {
             b_box->rot = self->rot;
             b_box->depth = self->depth;
             b_box->size = self->size;
-        } else if (is_empty(o) && self->steps != 0 && self->depth == 0) {
+        } else if (is_empty(o) && self->steps != 0 && self->steps < self->size -2 && (self->depth == 0 || self->depth == 2)) {
             r->type = BLANK;
             o->type = THICK_BOX;
             thick_box_t* o_box = (void*) o;
             o_box->steps = self->steps + 1;
             o_box->rot = self->rot;
-            o_box->depth = 1;
+            if (self->depth == 0) {
+                o_box->depth = 1;
+            } else {
+                o_box->depth = 0;
+            }
             o_box->size = self->size + 2;
-        } else if (is_empty(i) && self->steps > 1 && self->steps < self->size - 2 && self->depth == 0) {
+        } else if (is_empty(i) && self->steps > 2 && self->steps < self->size - 4 && (self->depth == 0 || self->depth == 1)) {
             r->type = BLANK;
             i->type = THICK_BOX;
             thick_box_t* i_box = (void*) i;
             i_box->steps = self->steps - 1;
             i_box->rot = self->rot;
-            i_box->depth = 2;
+            if (self->depth == 0) {
+                i_box->depth = 2;
+            } else {
+                i_box->depth = 0;
+            }
             i_box->size = self->size - 2;
         }
-    } else if (r->type == DREG) {
+    } else if (r->type == DREG && is_empty(x)) {
         swap_cells(x, r);
     }
 }
