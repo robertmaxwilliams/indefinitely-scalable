@@ -360,10 +360,10 @@ int main() {
         }
     }
 
-    const char *tmp = "Hello world";
-    memset(in_buff, 0, IN_SIZE);
-    strncpy(in_buff, tmp, IN_SIZE - 1);
-    print_in_buff_to_world(world);
+    //const char *tmp = "Hello world";
+    //memset(in_buff, 0, IN_SIZE);
+    //strncpy(in_buff, tmp, IN_SIZE - 1);
+    //print_in_buff_to_world(world);
 
 
     /* The array is organized like this:

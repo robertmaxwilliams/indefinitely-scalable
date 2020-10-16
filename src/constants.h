@@ -5,8 +5,8 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
-#define WORLD_SIZE 30
-#define SCALE 16
+#define WORLD_SIZE 10
+#define SCALE 64
 #define BORDER  (SCALE/4)
 #define SIDEBAR  30
 #define NUM_SIDEBAR_COLUMNS 5

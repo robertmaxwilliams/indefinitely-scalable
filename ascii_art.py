@@ -79,11 +79,11 @@ def grid_to_code(letters):
         group = list(group_iter)
         if len(group) == 1:
             (i, j, c) = group[0]
-            declarations.append(f'cell_t* {c};')
+            declarations.append(f'cell_t* {c} = {c};')
             code.append(f'{c} = cell{chainer(i, j)};')
         else:
             var_name = group[0][2]
-            declarations.append(f'cell_t* {var_name};')
+            declarations.append(f'cell_t* {var_name} = {var_name};')
             code.append(f'switch(rand() % {len(group)})' + ' {')
             for (n, (i, j, c)) in enumerate(group):
                 code.append(f'\tcase {n}: {c} = cell{chainer(i, j)}; break;')
