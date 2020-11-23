@@ -5,8 +5,8 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
-#define WORLD_SIZE 10
-#define SCALE 64
+#define WORLD_SIZE 40
+#define SCALE  16
 #define BORDER  (SCALE/4)
 #define SIDEBAR  30
 #define NUM_SIDEBAR_COLUMNS 5
@@ -35,6 +35,31 @@ typedef cell_t *world_t[WORLD_SIZE][WORLD_SIZE];
 cell_t* hole;
 
 typedef void (*update_function_type)(cell_t*);
+
+
+// TODO makeheader keeps screwing me and making me put stuff here
+typedef struct {
+    char id;
+    float x;
+    float y;
+} city_el_t;
+
+
+typedef struct {
+    char type;
+    char id;
+    char is_inactive;
+    float x;
+    float y;
+} frozen_city_t;
+
+
+typedef struct {
+    char type;
+    char id;
+    float x;
+    float y;
+} city_t;
 
 
 #endif
