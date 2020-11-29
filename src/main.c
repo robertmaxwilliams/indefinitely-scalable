@@ -40,7 +40,7 @@ unsigned int repeat3(unsigned char x) {
 //  rgb
 // bgra
 unsigned int rgb_to_bgra(unsigned int rgb) {
-    return ((rgb & 0xff) << 24) | ((rgb & 0xff00) << 8) | ((rgb & 0xff0000) >> 8);
+    return ((rgb & 0xff) << 24) | ((rgb & 0xff00) << 8) | ((rgb & 0xff0000) >> 8) | 0xff;
 }
 
 void draw_world(world_t world) {

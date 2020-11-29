@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <math.h>
+#include "data_colors.h"
 
 #include <SDL2/SDL.h>
 
@@ -37,6 +38,11 @@ void draw(int x, int y, unsigned int color1, unsigned int color2) {
     }
 }
 
+// TODO remove this, testing only
+unsigned int rgb_to_bgra2(unsigned int rgb) {
+    return ((rgb & 0xff) << 24) | ((rgb & 0xff00) << 8) | ((rgb & 0xff0000) >> 8);
+}
+
 void draw_sidebar(int row, int column, unsigned int color1, unsigned int color2) {
     unsigned int color;
     int border = SIDEBAR / 4;
@@ -47,6 +53,12 @@ void draw_sidebar(int row, int column, unsigned int color1, unsigned int color2)
             else
                 color = color2;
             pixels[SCALE*WORLD_SIZE+i + SIDEBAR*column + (SIDEBAR*row+j)*(WINDOW_WIDTH)] = color;
+        }
+    }
+    for (int i = 0; i < 256; i++) {
+        for (int j = 0; j < 10; j++) {
+            pixels[SCALE*WORLD_SIZE + SIDEBAR + (2*i)*WINDOW_WIDTH + j] = rgb_to_bgra2(data_colors[i]);
+            pixels[SCALE*WORLD_SIZE + SIDEBAR + (2*i+1)*WINDOW_WIDTH + j] = rgb_to_bgra2(data_colors[i]);
         }
     }
 }
