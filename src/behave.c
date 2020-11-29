@@ -99,11 +99,18 @@ void move_to_target_if_empty(cell_t* target, cell_t* source) {
     }
 }
 
+
 void clear_cell(cell_t* cell) {
     memset(cell->data, 0, DATA_SIZE);
     cell->type = BLANK;
 }
 
+void clear_and_set_type_if_cell_is_empty(cell_t* cell, char type) {
+    if (is_empty(cell)) {
+        clear_cell(cell);
+        cell->type = type;
+    }
+}
 
 void diffuse(cell_t * cell, int probability) {
     if (rand() % probability == 0) {

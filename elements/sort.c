@@ -50,28 +50,23 @@ void update_sorter(cell_t* cell) {
             | aa aa
             | aa.aa
             | aa aa;
+        unsigned char* openness = &cell->data[2];
+        unsigned char* crowdedness = &cell->data[3];
         if (a->type == SORTER) {
-            diffuse(cell, 1);
-            cell->data[2] += 1;
-            // if we had too diffuse too much,
-            // programmed cell death
-            if (cell->data[2] > 10) {
+            *openness = 0;
+            *crowdedness += 1;
+            if (*crowdedness > 4) {
+                // programmed cell death
                 clear_cell(cell);
                 return;
             }
+            diffuse(cell, 1);
         } else {
-            // if we got a long time without diffusing,
-            // reset diffuse counter
-            cell->data[3] += 1;
-            if (cell->data[3] > 100) {
-                cell->data[2] = 0;
-            }
-            if (cell->data[3] > 200) {
-                cell_t* new_sorter = random_neighbor(cell);
-                if (is_empty(new_sorter)) {
-                    cell->data[3] = 0;
-                    new_sorter->type = SORTER;
-                }
+            *openness += 1;
+            *crowdedness = 0;
+            if (*openness > 200) {
+                clear_and_set_type_if_cell_is_empty(random_neighbor(cell), SORTER);
+                *openness = 0;
             }
         }
     }
