@@ -6,7 +6,7 @@
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
 #define WORLD_SIZE 100
-#define SCALE 8 
+#define SCALE 8
 #define BORDER  (SCALE/4)
 #define SIDEBAR  30
 #define NUM_SIDEBAR_COLUMNS 5

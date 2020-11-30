@@ -14,6 +14,12 @@ void update_hwall(cell_t* cell) {
     }
 }
 
+// has n percent chance to return random result instead of true result
+int faulty_leq(unsigned char a, unsigned char b, int percent_failure) {
+    if (rand()%100 < percent_failure)
+        return rand()%2;
+    return a <= b;
+}
 // data[0] is stored value, data[1] is is_initialized,
 // data[2] counts how many time we've diffused
 #ELEMENT SORTER 0xffffff
@@ -33,7 +39,7 @@ void update_sorter(cell_t* cell) {
     if (a->type == DATA) {
         // do the sorting
         unsigned char new_data = a->data[0];
-        if (cell->data[0] <= new_data) {
+        if (faulty_leq(cell->data[0], new_data, 25)) {
             if (is_empty(y)) {
                 move_to_target_if_empty(y, a);
                 cell->data[0] = new_data;
@@ -47,26 +53,19 @@ void update_sorter(cell_t* cell) {
     } else {
         // or try to diffuse away from other sorters to fill space
         PATTERN
-            | aa aa
+            | aaaaa
             | aa.aa
-            | aa aa;
+            | aaaaa;
         unsigned char* openness = &cell->data[2];
         unsigned char* crowdedness = &cell->data[3];
         if (a->type == SORTER) {
-            *openness = 0;
-            *crowdedness += 1;
-            if (*crowdedness > 4) {
-                // programmed cell death
-                clear_cell(cell);
-                return;
-            }
             diffuse(cell, 1);
-        } else {
-            *openness += 1;
-            *crowdedness = 0;
-            if (*openness > 200) {
-                clear_and_set_type_if_cell_is_empty(random_neighbor(cell), SORTER);
-                *openness = 0;
+        } else if (a->type == RES) {
+            clear_cell(a);
+            // only sometimes reproduce, to keep sparse enough not
+            // to thrash so hard
+            if (randp(2)) {
+                a->type = SORTER;
             }
         }
     }
@@ -102,8 +101,8 @@ void update_data_eater(cell_t* cell) {
         a->data[1] = cell->data[1] + 1;
     }
     if (is_empty(b)) {
-        a->type = DATA_EATER;
-        a->data[1] = cell->data[1] - 1;
+        b->type = DATA_EATER;
+        b->data[1] = cell->data[1] - 1;
     }
 
     if (x->type == DATA) {
