@@ -19,7 +19,7 @@
 #define FROZEN_STRING_CELL_TYPE 2
 
 // start out at about 60 AER
-int sps = (WORLD_SIZE * WORLD_SIZE * 60) / 60;
+int sps = (100 * WORLD_SIZE * WORLD_SIZE * 60) / 60;
 int placer_index = 1;
 
 int last_clicked_x = 0;
@@ -155,6 +155,25 @@ void print_cell(cell_t* cell) {
     printf("]\n");
 }
 
+void read_from_file(world_t world) {
+    FILE *fp;
+    fp = fopen("save.dat", "rb");  // read
+    if (!fp) {
+        printf("Error in opening file. Aborting.\n");
+        return;
+    }
+    iter(x, WORLD_SIZE) {
+        iter(y, WORLD_SIZE) {
+            cell_t* cell = get_cell(world, x, y);
+            size_t items_read = fread(&cell->type, sizeof(unsigned char), 1, fp);
+            if (items_read != 1) printf("WARNING: had trouble reading file");
+            items_read = fread(&cell->data, sizeof(unsigned char), DATA_SIZE, fp);
+            if (items_read != DATA_SIZE) printf("WARNING: had trouble reading file");
+        }
+    }
+    fclose(fp);
+    printf("read in save file\n");
+}
 
 int poll_events(int* sps, world_t world) {
     while (SDL_PollEvent(&event)) {
@@ -227,36 +246,21 @@ int poll_events(int* sps, world_t world) {
                     printf("Wrote out save file\n");
                     break;
                 case SDLK_r:
-                    fp = fopen("save.dat", "rb");  // read
-                    if (!fp) {
-                        printf("Error in opening file. Aborting.\n");
-                        break;
-                    }
-                    iter(x, WORLD_SIZE) {
-                        iter(y, WORLD_SIZE) {
-                            cell_t* cell = get_cell(world, x, y);
-                            size_t items_read = fread(&cell->type, sizeof(unsigned char), 1, fp);
-                            if (items_read != 1) printf("WARNING: had trouble reading file");
-                            items_read = fread(&cell->data, sizeof(unsigned char), DATA_SIZE, fp);
-                            if (items_read != DATA_SIZE) printf("WARNING: had trouble reading file");
-                        }
-                    }
-                    fclose(fp);
-                    printf("read in save file\n");
+                    read_from_file(world);
                     break;
 
                 case SDLK_COMMA:
                     *sps /= 10;
                     if (*sps < 1)
                         *sps = 1;
-                    printf("sps = %d\n", *sps);
+                    printf("sps = %d, aer = %2f\n", *sps, ((float) *sps)/(WORLD_SIZE*WORLD_SIZE));
                     break;
                 case SDLK_PERIOD:
                     if (*sps <= 1)
                         *sps = 16;
                     else
                         *sps *= 10;
-                    printf("sps = %d\n", *sps);
+                    printf("sps = %d, aer = %2f\n", *sps, ((float) *sps)/(WORLD_SIZE*WORLD_SIZE));
                     break;
                 case SDLK_1: placer_index = 1; break;
                 case SDLK_2: placer_index = 2; break;
@@ -403,6 +407,8 @@ int main() {
 
     double num_sites = WORLD_SIZE*WORLD_SIZE;
     graphics_init();
+
+    read_from_file(world);
 
     while (1) {
 

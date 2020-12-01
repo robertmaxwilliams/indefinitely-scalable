@@ -64,14 +64,6 @@ void update_dreg(cell_t* cell) {
             if (randp(10)) a->type = RES;
             break;
 
-        case HWALL:
-            break;
-        case DATA_EATER:
-            break;
-        case DATA_EMITTER:
-            break;
-        case WALL:
-            break;
         default:
             if (randp(2)) {
                 // convert anyone to res

@@ -6,7 +6,7 @@
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
 #define WORLD_SIZE 100
-#define SCALE 8
+#define SCALE 8 
 #define BORDER  (SCALE/4)
 #define SIDEBAR  30
 #define NUM_SIDEBAR_COLUMNS 5
@@ -16,7 +16,7 @@
 
 #define iter(i_var, i_limit) for (int i_var=0;i_var<i_limit;i_var++)
 #define ifrand(n) if (rand() % n == 0)
-#define DATA_SIZE 10
+#define DATA_SIZE 14
 
 
 
@@ -48,9 +48,9 @@ typedef struct {
 typedef struct {
     char type;
     char id;
-    char is_inactive;
     float x;
     float y;
+    char is_inactive;
 } frozen_city_t;
 
 
@@ -61,6 +61,13 @@ typedef struct {
     float y;
 } city_t;
 
+
+typedef struct {
+    char type;
+    char is_done;
+    unsigned short visited; // 4 bytes?
+    float traveled; // 4 bytes
+} salesperson_t;
 
 #endif
 

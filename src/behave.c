@@ -88,6 +88,7 @@ void swap_cells(cell_t* a, cell_t* b) {
     copy_cell(temp, a);
     copy_cell(a, b);
     copy_cell(b, temp);
+    free(temp);
 }
 
 void move_to_target_if_empty(cell_t* target, cell_t* source) {
